@@ -1,3 +1,5 @@
+module Data where
+
 import Data.List
 
 data Symbol =   NEQ | ITER_UPTO | GEQ | LEQ | Eq | DOT | LBRACKET | RBRACKET |

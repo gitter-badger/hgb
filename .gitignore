@@ -6,3 +6,4 @@
 # Haskell output
 *.hi
 *.o
+.stack-work
