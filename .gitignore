@@ -1,0 +1,8 @@
+# Binaries
+*
+!*.*
+!*/
+
+# Haskell output
+*.hi
+*.o

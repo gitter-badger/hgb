@@ -1,5 +1,3 @@
-
-
 data Symbol =   NEQ | ITER_UPTO | GEQ | LEQ | Eq | DOT | LBRACKET | RBRACKET |
                 LPAREN | RPAREN | LBRACE | RBRACE | TYPE_DELIM | VAL_DELIM |
                 ASSIGN | GT | LT | PLUS | MINUS | TIMES | DIV | MOD |
