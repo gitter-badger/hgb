@@ -110,7 +110,3 @@ identifyNonAlphaOp str
     | (str == charBoundStr)    = CharBoundSymbol
     | (str == strBoundStr)     = StrBoundSymbol
     | (str == exprEndStr)      = ExprEndSymbol
-
-
-main = do
-    print (hgbLex "hello world")
