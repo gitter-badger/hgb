@@ -30,7 +30,7 @@ version = Version [0,1,0,0] []
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
 
 bindir     = "/Users/lukasberglund/Documents/Code/hgb/.stack-work/install/x86_64-osx/ee76c23dc14bf08d60e45fb054dbb8f102f2da1cd9172cd386046771b7e71e30/8.6.5/bin"
-libdir     = "/Users/lukasberglund/Documents/Code/hgb/.stack-work/install/x86_64-osx/ee76c23dc14bf08d60e45fb054dbb8f102f2da1cd9172cd386046771b7e71e30/8.6.5/lib/x86_64-osx-ghc-8.6.5/hgb-0.1.0.0-6SefN2gPo2iIl68ajXCLBj"
+libdir     = "/Users/lukasberglund/Documents/Code/hgb/.stack-work/install/x86_64-osx/ee76c23dc14bf08d60e45fb054dbb8f102f2da1cd9172cd386046771b7e71e30/8.6.5/lib/x86_64-osx-ghc-8.6.5/hgb-0.1.0.0-3TG1MYOh5723tnpJKhlEgv"
 dynlibdir  = "/Users/lukasberglund/Documents/Code/hgb/.stack-work/install/x86_64-osx/ee76c23dc14bf08d60e45fb054dbb8f102f2da1cd9172cd386046771b7e71e30/8.6.5/lib/x86_64-osx-ghc-8.6.5"
 datadir    = "/Users/lukasberglund/Documents/Code/hgb/.stack-work/install/x86_64-osx/ee76c23dc14bf08d60e45fb054dbb8f102f2da1cd9172cd386046771b7e71e30/8.6.5/share/x86_64-osx-ghc-8.6.5/hgb-0.1.0.0"
 libexecdir = "/Users/lukasberglund/Documents/Code/hgb/.stack-work/install/x86_64-osx/ee76c23dc14bf08d60e45fb054dbb8f102f2da1cd9172cd386046771b7e71e30/8.6.5/libexec/x86_64-osx-ghc-8.6.5/hgb-0.1.0.0"

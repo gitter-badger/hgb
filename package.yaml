@@ -21,7 +21,12 @@ description:
   Please see the README on GitHub at <https://github.com/githubuser/hgb#readme>
 
 dependencies:
+<<<<<<< HEAD
   - base >= 4.7 && < 5
+=======
+- base >= 4.7 && < 5
+- containers
+>>>>>>> first time no compiler error
 
 library:
   source-dirs: src

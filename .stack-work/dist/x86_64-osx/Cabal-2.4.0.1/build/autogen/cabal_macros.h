@@ -22,6 +22,17 @@
   (major1) == 4 && (major2) == 12 && (minor) <= 0)
 #endif /* MIN_VERSION_base */
 
+/* package containers-0.6.0.1 */
+#ifndef VERSION_containers
+#define VERSION_containers "0.6.0.1"
+#endif /* VERSION_containers */
+#ifndef MIN_VERSION_containers
+#define MIN_VERSION_containers(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  6 || \
+  (major1) == 0 && (major2) == 6 && (minor) <= 0)
+#endif /* MIN_VERSION_containers */
+
 /* tool gcc-4.2.1 */
 #ifndef TOOL_VERSION_gcc
 #define TOOL_VERSION_gcc "4.2.1"
@@ -100,10 +111,10 @@
 #endif /* MIN_TOOL_VERSION_runghc */
 
 #ifndef CURRENT_PACKAGE_KEY
-#define CURRENT_PACKAGE_KEY "hgb-0.1.0.0-6SefN2gPo2iIl68ajXCLBj"
+#define CURRENT_PACKAGE_KEY "hgb-0.1.0.0-3TG1MYOh5723tnpJKhlEgv"
 #endif /* CURRENT_PACKAGE_KEY */
 #ifndef CURRENT_COMPONENT_ID
-#define CURRENT_COMPONENT_ID "hgb-0.1.0.0-6SefN2gPo2iIl68ajXCLBj"
+#define CURRENT_COMPONENT_ID "hgb-0.1.0.0-3TG1MYOh5723tnpJKhlEgv"
 #endif /* CURRENT_COMPONENT_ID */
 #ifndef CURRENT_PACKAGE_VERSION
 #define CURRENT_PACKAGE_VERSION "0.1.0.0"
