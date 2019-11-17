@@ -4,11 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
-<<<<<<< HEAD
--- hash: 1e216417a64f308e904904fd587268e1df1e2318337c95610e5114ca4d1695c5
-=======
 -- hash: e7e09d0ea5379a1eb984b4dbbccf9b73b264ffb4b2df8294813957572cea5930
->>>>>>> first time no compiler error
 
 name:           hgb
 version:        0.1.0.0
