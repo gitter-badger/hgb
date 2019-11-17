@@ -1,6 +1,8 @@
 module Data where
 
 import Data.List
+import Data.Set
+
 
 data Symbol =   NEQ | ITER_UPTO | GEQ | LEQ | Eq | DOT | LBRACKET | RBRACKET |
                 LPAREN | RPAREN | LBRACE | RBRACE | TYPE_DELIM | VAL_DELIM |
@@ -101,3 +103,18 @@ lexKeyword str =
     in [(identifyKeyWord word, word)] ++ hgbLex remainder
 
 wordLen :: String -> Int
+wordLen (x:xs)
+    | member operatorDelims x   = 0
+    | isWhiteSpace x            = 0
+    | otherwise                 = 1 + wordLen xs
+
+operatorSymbols = [("=/=", NEQ'), ("->", ITER_UPTO), (">=", GEQ),
+                    ("<=", LEQ), ("==", EQ), (".", DOT),
+                    ("[", LBRACKET), ("]", RBRACKET), ("(", LPAREN),
+                    (")", RPAREN), ("{", LBRACE), ("}", RBRACE),
+                    (":", TYPE_DELIM), (",", VAL_DELIM), ("=", ASSIGN),
+                    (">", GT), ("<", LT), ("+", PLUS), ("-", MINUS),
+                    ("*", TIMES), ("/", DIV), ("%", MOD),
+                    ("\'", CHAR_BOUND), ("\"", STR_BOUND), ("!", EXPR_END)]
+
+operatorDelims = fromList [take 1 symbol | (symbol, _) <- operatorSymbols]

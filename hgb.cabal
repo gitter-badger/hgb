@@ -15,7 +15,6 @@ author:         Lukas Berglund, Ayaz Hafiz
 maintainer:     ayaz.hafiz.1@gmail.com
 copyright:      2019 Berglund, hafiz
 license:        BSD3
-license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
