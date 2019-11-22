@@ -24,8 +24,8 @@ lexStr all@(delim:xs) = (Token StrBoundSymbol [delim]) : lexStr' "" xs
 
 lexStr' :: String -> String -> [Token]
 lexStr' soFar (x:xs)
-  | x == delim =
-    (Token StringSymbol soFar) : (Token StrBoundSymbol [delim]) : hgbLex xs
+  | [x] == strBoundStr =
+    (Token StringSymbol soFar) : (Token StrBoundSymbol [x]) : hgbLex xs
   | otherwise = lexStr' (soFar ++ [x]) xs
 
 lexDigit :: String -> [Token]
@@ -37,16 +37,16 @@ lexDigit str = lexDigit' "" str
             | otherwise = [Token DigitSymbol soFar] ++ hgbLex xs
 
 lexAlphaKeyword :: String -> [Token]
-lexAlphaKeyword = lexByPredicate (\x -> not (isAlpha x || isDigit))
+lexAlphaKeyword = lexByPredicate (\x -> not (isAlpha x || isDigit x))
 
 lexNonAlphaKeyWord :: String -> [Token]
 lexNonAlphaKeyWord = lexByPredicate (\x -> isSpace x || isAlpha x || isDigit x)
 
-lexByPredicate :: (String -> Bool) -> String -> [Token]
+lexByPredicate :: (Char -> Bool) -> String -> [Token]
 lexByPredicate = lexByPredicate' ""
 
-lexByPredicate' :: String -> String -> [Token]
-lexByPredicate' accumulator all@(x:xs)
+lexByPredicate' :: String -> (Char -> Bool) -> String -> [Token]
+lexByPredicate' accumulator predicate all@(x:xs)
     | predicate x   = (Token symbolType accumulator) : hgbLex xs
-                        where symbolType = strToSymbol accumulator
-    | otherwise     = lexByPredicate' xs (soFar ++ [x])
+    | otherwise     = lexByPredicate' (accumulator ++ [x]) predicate xs
+    where symbolType = strToSymbol accumulator
