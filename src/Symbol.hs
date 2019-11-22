@@ -53,23 +53,6 @@ uintStr = "uint"
 charStr = "char"
 voidStr = "void"
 
--- operatorStrs =  [ neqStr, iterUptoStr, geqStr,
---                     leqStr, eqStr, dotStr, lbracketStr,
---                     rbracketStr, lparenStr, rparenStr,
---                     lbraceStr, rbraceStr, typeDelimStr,
---                     valDelimStr, assignStr, gtStr,
---                     ltStr, plusStr, minusStr, timesStr,
---                     divStr, modStr, charBoundStr,
---                     strBoundStr, exprEndStr ]
---
--- operatorStrsSet = Data.Set.fromList operatorStrs
---
--- typeStrsSet = Data.Set.fromList [ int8Str, int16Str, int32Str, int64Str,
---                         intStr, uint8Str, uint16Str, uint32Str,
---                         uint64Str, uintStr, charStr, voidStr ]
---
--- operatorDelimsSet = Data.Set.fromList [head sym | sym <- operatorStrs]
-
 data Symbol =   NeqSymbol | IterUptoSymbol | GeqSymbol | LeqSymbol | EqSymbol |
                 DotSymbol | LbracketSymbol | RbracketSymbol | LparenSymbol |
                 RparenSymbol | LbraceSymbol | RbraceSymbol | TypeDelimSymbol |

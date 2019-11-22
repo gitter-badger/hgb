@@ -21,12 +21,12 @@ hgbLex all@(x:xs)
 
 lexStr :: String -> [Token]
 lexStr all@(delim:xs) = (Token StrBoundSymbol [delim]) : lexStr' "" xs
-    where
-        lexStr' :: String -> String -> [Token]
-        lexStr' soFar (x:xs)
-          | x == delim =
-            (Token StringSymbol soFar) : (Token StrBoundSymbol [delim]) : hgbLex xs
-          | otherwise = lexStr' (soFar ++ [x]) xs
+
+lexStr' :: String -> String -> [Token]
+lexStr' soFar (x:xs)
+  | x == delim =
+    (Token StringSymbol soFar) : (Token StrBoundSymbol [delim]) : hgbLex xs
+  | otherwise = lexStr' (soFar ++ [x]) xs
 
 lexDigit :: String -> [Token]
 lexDigit str = lexDigit' "" str
@@ -37,19 +37,16 @@ lexDigit str = lexDigit' "" str
             | otherwise = [Token DigitSymbol soFar] ++ hgbLex xs
 
 lexAlphaKeyword :: String -> [Token]
-lexAlphaKeyword str = lexAlphaKeyword' "" str
-    where
-        lexAlphaKeyword' :: String -> String -> [Token]
-        lexAlphaKeyword' soFar all@(x:xs)
-            | (Data.Set.member x operatorDelimsSet || isSpace x)
-                        = (Token (strToSymbol soFar) soFar) : hgbLex xs
-            | otherwise = lexAlphaKeyword' xs (soFar ++ [x])
+lexAlphaKeyword = lexByPredicate (\x -> not (isAlpha x || isDigit))
 
 lexNonAlphaKeyWord :: String -> [Token]
-lexNonAlphaKeyWord str = lexNonAlphaKeyWord' "" str
-    where
-        lexNonAlphaKeyWord' :: String -> String -> [Token]
-        lexNonAlphaKeyWord' soFar all@(x:xs)
-            | (isSpace x || isAlpha x || isDigit x)
-                        = (Token (strToSymbol soFar) soFar) : hgbLex xs
-            | otherwise = lexNonAlphaKeyWord' xs (soFar ++ [x])
+lexNonAlphaKeyWord = lexByPredicate (\x -> isSpace x || isAlpha x || isDigit x)
+
+lexByPredicate :: (String -> Bool) -> String -> [Token]
+lexByPredicate = lexByPredicate' ""
+
+lexByPredicate' :: String -> String -> [Token]
+lexByPredicate' accumulator all@(x:xs)
+    | predicate x   = (Token symbolType accumulator) : hgbLex xs
+                        where symbolType = strToSymbol accumulator
+    | otherwise     = lexByPredicate' xs (soFar ++ [x])
