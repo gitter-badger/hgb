@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1e216417a64f308e904904fd587268e1df1e2318337c95610e5114ca4d1695c5
+-- hash: e7e09d0ea5379a1eb984b4dbbccf9b73b264ffb4b2df8294813957572cea5930
 
 name:           hgb
 version:        0.1.0.0
@@ -15,7 +15,6 @@ author:         Lukas Berglund, Ayaz Hafiz
 maintainer:     ayaz.hafiz.1@gmail.com
 copyright:      2019 Berglund, hafiz
 license:        BSD3
-license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
@@ -31,12 +30,14 @@ library
       Grammar
       Lexer
       Lib
+      Symbol
   other-modules:
       Paths_hgb
   hs-source-dirs:
       src
   build-depends:
       base >=4.7 && <5
+    , containers
   default-language: Haskell2010
 
 executable hgb-exe
@@ -44,10 +45,11 @@ executable hgb-exe
   other-modules:
       Paths_hgb
   hs-source-dirs:
-      app
+      app, src
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , containers
     , hgb
   default-language: Haskell2010
 
@@ -61,6 +63,7 @@ test-suite hgb-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , containers
     , hgb
     , tasty
   default-language: Haskell2010

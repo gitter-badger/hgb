@@ -1,103 +1,40 @@
 module Data where
 
-import Data.List
+import Data.List hiding (take, drop)
+import Data.Set hiding (take, drop)
+import Data.Char hiding (take, drop)
+import Data.Map
+import Symbol
 
-data Symbol =   NEQ | ITER_UPTO | GEQ | LEQ | Eq | DOT | LBRACKET | RBRACKET |
-                LPAREN | RPAREN | LBRACE | RBRACE | TYPE_DELIM | VAL_DELIM |
-                ASSIGN | GT | LT | PLUS | MINUS | TIMES | DIV | MOD |
-                CHAR_BOUND | STR_BOUND | EXPR_END | IN | AND | NOT | OR | FOR |
-                WHILE | IF | ELSE | ELSEIF | FUNC | RETURN | TYPE | INVALID | STRING
-                deriving (Eq, Show, Read, Bounded)
-
-data Token = Symbol String
-
-addToken :: (Symbol sym) => (sym, String) -> (sym, String) -> (sym, String)
-addToken (sym, s1) (sym, s2) = (sym, s1 ++ s2)
-
-lexBasic :: String -> Symbol
-
-lexBasic word = case word of
-                "=/=" -> NEQ
-                "->" -> ITER_UPTO
-                ">=" -> GEQ
-                "<=" -> LEQ
-                "==" -> EQ
-                "." -> DOT
-                "[" -> LBRACKET
-                "]" -> RBRACKET
-                "(" -> LPAREN
-                ")" -> RPAREN
-                "{" -> LBRACE
-                "}" -> RBRACE
-                ":" -> TYPE_DELIM
-                "," -> VAL_DELIM
-                "=" -> ASSIGN
-                ">" -> GT
-                "<" -> LT
-                "+" -> PLUS
-                "-" -> MINUS
-                "*" -> TIMES
-                "/" -> DIV
-                "%" -> MOD
-                "\'" -> CHAR_BOUND
-                "\"" -> STR_BOUND
-                "!" -> EXPR_END
-                "in" -> IN
-                "and" -> AND
-                "not" -> NOT
-                "or" -> OR
-                "for" -> FOR
-                "while" -> WHILE
-                "if" -> IF
-                "else" -> ELSE
-                "elseif" -> ELSEIF
-                "fun" -> FUNC
-                "return" -> RETURN
-                "int8" -> TYPE
-                "int16" -> TYPE
-                "int32" -> TYPE
-                "int64" -> TYPE
-                "int" -> TYPE
-                "uint8" -> TYPE
-                "uint16" -> TYPE
-                "uint32" -> TYPE
-                "uint64" -> TYPE
-                "uint" -> TYPE
-                "char" -> TYPE
-                "void" -> TYPE
-                s -> NAME
-
-
-strDelim = "\""
+data Token =    Token Symbol String
+                deriving (Eq, Show, Read)
 
 hgbLex :: String -> [Token]
 hgbLex "" = []
 hgbLex all@(x:xs)
-    | isWhiteSpace(x)   = hgbLex xs
-    | x == strDelim     = lexStr xs
-    | isAlpha(x)        = lexKeyword all
-    | otherwise         = lexBuiltInOperator all
+    | isSpace(x)            = hgbLex xs
+    | [x] == strBoundStr    = lexStr all
+    | isDigit x             = lexNumber all
+    | isAlpha x             = lexAlphaKeyword all
+    | otherwise             = lexNonAlphaKeyWord all
 
-
-isStringDelim:: Char -> Bool
-isStringDelim = (=="\"")
-
-isWhiteSpace :: Char -> Bool
-isWhiteSpace c = elem c " \t\n"
 
 lexStr :: String -> [Token]
-lexStr str
-    let strLen = elemIndex strDelim str in
-    | strLen == Nothing   = error "Error in code: String opened without closing"
-    | otherwise           = [(STRING, strContent)] ++ hgbLex remainder
-                            where   strContent = take strLen str
-                                    remainder = drop (strLen + 1) str
+lexStr (delim:xs) =
+    (Token StrBoundSymbol [delim]) : (Token StringSymbol content)
+        : (Token StrBoundSymbol [delim]) : hgbLex remainder
+    where (content, (delim:remainder)) = break (==delim) xs
 
-lexKeyword :: String -> [Token]
-lexKeyword str =
-    let wl = wordLen str
-        word = take wl str
-        remainder = drop wl str
-    in [(identifyKeyWord word, word)] ++ hgbLex remainder
+lexNumber :: String -> [Token]
+lexNumber str =  (Token DigitSymbol dig) : hgbLex remainder
+                where (dig, remainder) = span isDigit str
 
-wordLen :: String -> Int
+lexAlphaKeyword :: String -> [Token]
+lexAlphaKeyword str =
+    (Token (strToSymbol keyWord) keyWord) : hgbLex remainder
+    where (keyWord, remainder) = span isAlphaNum str
+
+lexNonAlphaKeyWord :: String -> [Token]
+lexNonAlphaKeyWord str =
+    (Token (strToSymbol keyWord) keyWord) : hgbLex remainder
+    where (keyWord, remainder) = span isSymbol str
