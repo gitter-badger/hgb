@@ -29,12 +29,7 @@ lexStr' soFar (x:xs)
   | otherwise = lexStr' (soFar ++ [x]) xs
 
 lexDigit :: String -> [Token]
-lexDigit str = lexDigit' "" str
-    where
-        lexDigit' :: String -> String -> [Token]
-        lexDigit' soFar all@(x:xs)
-            | isDigit x = lexDigit' (soFar ++ [x]) xs
-            | otherwise = [Token DigitSymbol soFar] ++ hgbLex xs
+lexDigit = lexByPredicate (not isDigit)
 
 lexAlphaKeyword :: String -> [Token]
 lexAlphaKeyword = lexByPredicate (\x -> not (isAlpha x || isDigit x))
@@ -43,7 +38,7 @@ lexNonAlphaKeyWord :: String -> [Token]
 lexNonAlphaKeyWord = lexByPredicate (\x -> isSpace x || isAlpha x || isDigit x)
 
 lexByPredicate :: (Char -> Bool) -> String -> [Token]
-lexByPredicate = lexByPredicate' ""
+lexByPredicate predicate = lexByPredicate' ""
 
 lexByPredicate' :: String -> (Char -> Bool) -> String -> [Token]
 lexByPredicate' accumulator predicate all@(x:xs)
