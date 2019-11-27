@@ -23,13 +23,7 @@ lexStr :: String -> [Token]
 lexStr (delim:xs) =
     (Token StrBoundSymbol [delim]) : (Token StringSymbol content)
         : (Token StrBoundSymbol [delim]) : hgbLex remainder
-    where (content, (delim:remainder)) = span (/= delim) xs
-
-lexStr' :: String -> String -> [Token]
-lexStr' soFar (x:xs)
-  | [x] == strBoundStr =
-    (Token StringSymbol soFar) : (Token StrBoundSymbol [x]) : hgbLex xs
-  | otherwise = lexStr' (soFar ++ [x]) xs
+    where (content, (delim:remainder)) = break (==delim) xs
 
 lexNumber :: String -> [Token]
 lexNumber str =  (Token DigitSymbol dig) : hgbLex remainder
@@ -43,4 +37,4 @@ lexAlphaKeyword str =
 lexNonAlphaKeyWord :: String -> [Token]
 lexNonAlphaKeyWord str =
     (Token (strToSymbol keyWord) keyWord) : hgbLex remainder
-    where (keyWord, remainder) = span (\x -> not (isAlphaNum x|| isSpace x)) str
+    where (keyWord, remainder) = span isSymbol str
