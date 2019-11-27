@@ -14,13 +14,16 @@ hgbLex "" = []
 hgbLex all@(x:xs)
     | isSpace(x)            = hgbLex xs
     | [x] == strBoundStr    = lexStr all
-    | isDigit x             = lexDigit all
+    | isDigit x             = lexNumber all
     | isAlpha x             = lexAlphaKeyword all
     | otherwise             = lexNonAlphaKeyWord all
 
 
 lexStr :: String -> [Token]
-lexStr all@(delim:xs) = (Token StrBoundSymbol [delim]) : lexStr' "" xs
+lexStr (delim:xs) =
+    (Token StrBoundSymbol [delim]) : (Token StringSymbol content)
+        : (Token StrBoundSymbol [delim]) : hgbLex remainder
+    where (content, (delim:remainder)) = span (/= delim) xs
 
 lexStr' :: String -> String -> [Token]
 lexStr' soFar (x:xs)
@@ -28,20 +31,16 @@ lexStr' soFar (x:xs)
     (Token StringSymbol soFar) : (Token StrBoundSymbol [x]) : hgbLex xs
   | otherwise = lexStr' (soFar ++ [x]) xs
 
-lexDigit :: String -> [Token]
-lexDigit = lexByPredicate (not isDigit)
+lexNumber :: String -> [Token]
+lexNumber str =  (Token DigitSymbol dig) : hgbLex remainder
+                where (dig, remainder) = span isDigit str
 
 lexAlphaKeyword :: String -> [Token]
-lexAlphaKeyword = lexByPredicate (\x -> not (isAlpha x || isDigit x))
+lexAlphaKeyword str =
+    (Token (strToSymbol keyWord) keyWord) : hgbLex remainder
+    where (keyWord, remainder) = span (\x -> isAlpha x || isDigit x) str
 
 lexNonAlphaKeyWord :: String -> [Token]
-lexNonAlphaKeyWord = lexByPredicate (\x -> isSpace x || isAlpha x || isDigit x)
-
-lexByPredicate :: (Char -> Bool) -> String -> [Token]
-lexByPredicate predicate = lexByPredicate' ""
-
-lexByPredicate' :: String -> (Char -> Bool) -> String -> [Token]
-lexByPredicate' accumulator predicate all@(x:xs)
-    | predicate x   = (Token symbolType accumulator) : hgbLex xs
-    | otherwise     = lexByPredicate' (accumulator ++ [x]) predicate xs
-    where symbolType = strToSymbol accumulator
+lexNonAlphaKeyWord str =
+    (Token (strToSymbol keyWord) keyWord) : hgbLex remainder
+    where (keyWord, remainder) = span (\x -> not (isAlpha x || isDigit x || isSpace x)) str
