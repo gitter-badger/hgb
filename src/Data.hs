@@ -38,9 +38,9 @@ lexNumber str =  (Token DigitSymbol dig) : hgbLex remainder
 lexAlphaKeyword :: String -> [Token]
 lexAlphaKeyword str =
     (Token (strToSymbol keyWord) keyWord) : hgbLex remainder
-    where (keyWord, remainder) = span (\x -> isAlpha x || isDigit x) str
+    where (keyWord, remainder) = span isAlphaNum str
 
 lexNonAlphaKeyWord :: String -> [Token]
 lexNonAlphaKeyWord str =
     (Token (strToSymbol keyWord) keyWord) : hgbLex remainder
-    where (keyWord, remainder) = span (\x -> not (isAlpha x || isDigit x || isSpace x)) str
+    where (keyWord, remainder) = span (\x -> not (isAlphaNum x|| isSpace x)) str
