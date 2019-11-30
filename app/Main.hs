@@ -1,7 +1,7 @@
 module Main where
 
-import Lib
+import qualified Lib as LibHgb
 
 main :: IO ()
 main = do
-    print (hgbLex "=/=")
+    print (LibHgb.lex "=/=")

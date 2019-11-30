@@ -2,9 +2,10 @@ module Token.TokenSpec
   ( spec
   ) where
 
-import Data (Token(..))
-import Symbol (Symbol(..))
 import Test.Hspec
+
+import Symbol (Symbol(..))
+import Token (Token(..))
 
 spec :: Spec
 spec = do

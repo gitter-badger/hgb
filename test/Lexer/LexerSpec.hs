@@ -4,30 +4,36 @@ module Lexer.LexerSpec
 
 import Control.Monad
 import Data.Semigroup
+import Prelude hiding (lex)
 import Text.Printf
 
-import qualified Builtin
-import Data (Token(..), hgbLex)
-import Symbol (Symbol(..))
 import Test.Hspec
+
+import qualified Builtin
+import Lexer (lex)
+import Symbol (Symbol(..))
+import Token (Token(..))
 
 spec :: Spec
 spec = do
   describe "LexStr" $ do
     it "lexes strings correctly" $ do
-      hgbLex "\"str\"" `shouldBe`
+      lex "\"str\"" `shouldBe`
         [ (Token Symbol.StrBound "\"")
         , (Token Symbol.String "str")
         , (Token Symbol.StrBound "\"")
         ]
     it "handles missing content" $ do
-      hgbLex "\"\"" `shouldBe`
-        [(Token Symbol.StrBound "\""), (Token Symbol.StrBound "\"")]
+      lex "\"\"" `shouldBe`
+        [ (Token Symbol.StrBound "\"")
+        , (Token Symbol.String "")
+        , (Token Symbol.StrBound "\"")
+        ]
     it "handles missing ending quote" $ do
-      hgbLex "\"str" `shouldBe`
+      lex "\"str" `shouldBe`
         [(Token Symbol.StrBound "\""), (Token Symbol.String "str")]
     it "lexes after string end" $ do
-      hgbLex "\"str\" \"ing\"" `shouldBe`
+      lex "\"str\" \"ing\"" `shouldBe`
         [ (Token Symbol.StrBound "\"")
         , (Token Symbol.String "str")
         , (Token Symbol.StrBound "\"")
@@ -37,13 +43,13 @@ spec = do
         ]
   describe "LexNumber" $ do
     it "lexes numbers correctly" $ do
-      hgbLex "123" `shouldBe` [(Token Symbol.Number "123")]
+      lex "123" `shouldBe` [(Token Symbol.Number "123")]
     it "lexes after number end" $ do
-      hgbLex "123 456" `shouldBe`
+      lex "123 456" `shouldBe`
         [(Token Symbol.Number "123"), (Token Symbol.Number "456")]
   describe "LexKeyword" $ do
     it "lexes custom keywords correctly" $ do
-      hgbLex "gingerbread" `shouldBe` [(Token Symbol.Name "gingerbread")]
+      lex "gingerbread" `shouldBe` [(Token Symbol.Name "gingerbread")]
   describe "Lex Builtin" $ do
     let cases =
           [ (Builtin.KeywordIterUpTo, Symbol.IterUpTo)
@@ -69,7 +75,6 @@ spec = do
           , (Builtin.KeywordDiv, Symbol.Div)
           , (Builtin.KeywordMod, Symbol.Mod)
           , (Builtin.KeywordCharBound, Symbol.CharBound)
-          , (Builtin.KeywordStrBound, Symbol.StrBound)
           , (Builtin.KeywordExprEnd, Symbol.ExprEnd)
           , (Builtin.KeywordIn, Symbol.In)
           , (Builtin.KeywordAnd, Symbol.And)
@@ -97,7 +102,7 @@ spec = do
           ]
     forM_ cases $ \(keyword, symbol) -> do
       it ("lexes " ++ (show symbol) ++ ": " ++ keyword) $ do
-        hgbLex keyword `shouldBe` [(Token symbol keyword)]
+        lex keyword `shouldBe` [(Token symbol keyword)]
   describe "LexOperator" $ do
     it "lexes custom operators as invalid" $ do
-      hgbLex "@^@" `shouldBe` [(Token Symbol.Invalid "@^@")]
+      lex "@^@" `shouldBe` [(Token Symbol.Invalid "@^@")]
