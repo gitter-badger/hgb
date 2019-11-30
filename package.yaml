@@ -48,4 +48,5 @@ tests:
       - -with-rtsopts=-N
     dependencies:
       - hgb
-      - tasty
+      - hspec
+      - QuickCheck
