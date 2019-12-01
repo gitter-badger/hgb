@@ -33,9 +33,9 @@ lexStr (delim:xs) = (Token Symbol.StrBound [delim]) : content : postContent
           (Token Symbol.StrBound [endDelim]) : lex remainder
 
 lexNumber :: String -> [Token]
-lexNumber str = (Token Symbol.Number dig) : lex remainder
+lexNumber str = (Token Symbol.Number numStr) : lex remainder
   where
-    (dig, remainder) = span isDigit str
+    (numStr, remainder) = span isDigit str
 
 lexAlphaKeyword :: String -> [Token]
 lexAlphaKeyword str = (Token (keywordToSymbol keyword) keyword) : lex remainder

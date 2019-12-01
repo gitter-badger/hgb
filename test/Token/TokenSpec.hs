@@ -11,4 +11,4 @@ spec :: Spec
 spec = do
   describe "Token" $ do
     it "should show correctly" $ do
-      (show (Token Symbol.String "str")) `shouldBe` "Token String \"str\""
+      (show (Token Symbol.String "str")) `shouldBe` "Token {symbol = String, content = \"str\"}"

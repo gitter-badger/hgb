@@ -2,6 +2,6 @@ module Token where
 
 import Symbol (Symbol(..))
 
-data Token =
-  Token Symbol String
-  deriving (Eq, Show)
+data Token = Token  { symbol :: Symbol
+                    , content :: String
+                    } deriving (Eq, Show)

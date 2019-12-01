@@ -11,6 +11,8 @@ data Symbol
   | NEq
   | GEq
   | LEq
+  | GT
+  | LT
   | Eq
   | Dot
   | LBracket
@@ -22,8 +24,6 @@ data Symbol
   | TypeDelim
   | ValueDelim
   | Assign
-  | GT
-  | LT
   | Plus
   | Minus
   | Times
