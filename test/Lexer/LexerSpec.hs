@@ -19,37 +19,37 @@ spec = do
   describe "LexStr" $ do
     it "lexes strings correctly" $ do
       lex "\"str\"" `shouldBe`
-        [ (Token Symbol.StrBound "\"")
-        , (Token Symbol.String "str")
-        , (Token Symbol.StrBound "\"")
+        [ (Token Symbol.StrBound "\"" 0 1)
+        , (Token Symbol.String "str" 1 4)
+        , (Token Symbol.StrBound "\"" 4 5)
         ]
     it "handles missing content" $ do
       lex "\"\"" `shouldBe`
-        [ (Token Symbol.StrBound "\"")
-        , (Token Symbol.String "")
-        , (Token Symbol.StrBound "\"")
+        [ (Token Symbol.StrBound "\"" 0 1)
+        , (Token Symbol.String "" 1 1)
+        , (Token Symbol.StrBound "\"" 1 2)
         ]
     it "handles missing ending quote" $ do
       lex "\"str" `shouldBe`
-        [(Token Symbol.StrBound "\""), (Token Symbol.String "str")]
+        [(Token Symbol.StrBound "\"" 0 1), (Token Symbol.String "str" 1 4)]
     it "lexes after string end" $ do
       lex "\"str\" \"ing\"" `shouldBe`
-        [ (Token Symbol.StrBound "\"")
-        , (Token Symbol.String "str")
-        , (Token Symbol.StrBound "\"")
-        , (Token Symbol.StrBound "\"")
-        , (Token Symbol.String "ing")
-        , (Token Symbol.StrBound "\"")
+        [ (Token Symbol.StrBound "\"" 0 1)
+        , (Token Symbol.String "str" 1 4)
+        , (Token Symbol.StrBound "\"" 4 5)
+        , (Token Symbol.StrBound "\"" 6 7)
+        , (Token Symbol.String "ing" 7 10)
+        , (Token Symbol.StrBound "\"" 10 11)
         ]
   describe "LexNumber" $ do
     it "lexes numbers correctly" $ do
-      lex "123" `shouldBe` [(Token Symbol.Number "123")]
+      lex "123" `shouldBe` [(Token Symbol.Number "123" 0 3)]
     it "lexes after number end" $ do
       lex "123 456" `shouldBe`
-        [(Token Symbol.Number "123"), (Token Symbol.Number "456")]
+        [(Token Symbol.Number "123" 0 3), (Token Symbol.Number "456" 4 7)]
   describe "LexKeyword" $ do
     it "lexes custom keywords correctly" $ do
-      lex "gingerbread" `shouldBe` [(Token Symbol.Name "gingerbread")]
+      lex "gingerbread" `shouldBe` [(Token Symbol.Name "gingerbread" 0 11)]
   describe "Lex Builtin" $ do
     let cases =
           [ (Builtin.KeywordIterUpTo, Symbol.IterUpTo)
@@ -102,7 +102,7 @@ spec = do
           ]
     forM_ cases $ \(keyword, symbol) -> do
       it ("lexes " ++ (show symbol) ++ ": " ++ keyword) $ do
-        lex keyword `shouldBe` [(Token symbol keyword)]
+        lex keyword `shouldBe` [(Token symbol keyword 0 (length keyword))]
   describe "LexOperator" $ do
     it "lexes custom operators as invalid" $ do
-      lex "@^@" `shouldBe` [(Token Symbol.Invalid "@^@")]
+      lex "@^@" `shouldBe` [(Token Symbol.Invalid "@^@" 0 3)]
