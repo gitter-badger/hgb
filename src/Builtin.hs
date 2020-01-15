@@ -94,6 +94,8 @@ pattern KeywordUInt64 = "uint64"
 
 pattern KeywordUInt = "uint"
 
+pattern KeywordDouble = "double"
+
 pattern KeywordChar = "char"
 
 pattern KeywordVoid = "void"

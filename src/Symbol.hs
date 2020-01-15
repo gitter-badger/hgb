@@ -96,6 +96,7 @@ keywordToSymbol Builtin.KeywordUInt16 = Just Symbol.Type
 keywordToSymbol Builtin.KeywordUInt32 = Just Symbol.Type
 keywordToSymbol Builtin.KeywordUInt64 = Just Symbol.Type
 keywordToSymbol Builtin.KeywordUInt = Just Symbol.Type
+keywordToSymbol Builtin.KeywordDouble = Just Symbol.Type
 keywordToSymbol Builtin.KeywordChar = Just Symbol.Type
 keywordToSymbol Builtin.KeywordVoid = Just Symbol.Type
 keywordToSymbol str = Nothing
