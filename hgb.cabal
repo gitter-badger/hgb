@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8ce5867f933b8136118bbb6ef660aab5f713b462c36716467b043add98bd0a22
+-- hash: 358441cd232d4e466fe2052b3591b88124d3aca96429ca03bbf3d7005cce7cff
 
 name:           hgb
 version:        0.1.0.0
@@ -28,7 +28,6 @@ source-repository head
 library
   exposed-modules:
       Builtin
-      Grammar
       Lexer
       Lib
       Symbol
