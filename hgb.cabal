@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 358441cd232d4e466fe2052b3591b88124d3aca96429ca03bbf3d7005cce7cff
+-- hash: 587ae9af2289328a94acad10286891e4820fe58b2e8870e0b499f7e759eb7dca
 
 name:           hgb
 version:        0.1.0.0
@@ -15,7 +15,6 @@ author:         Lukas Berglund, Ayaz Hafiz
 maintainer:     ayaz.hafiz.1@gmail.com
 copyright:      2019 Berglund, hafiz
 license:        BSD3
-license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md

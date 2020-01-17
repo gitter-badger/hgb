@@ -74,7 +74,6 @@ spec = do
           , (Builtin.KeywordTimes, Symbol.Times)
           , (Builtin.KeywordDiv, Symbol.Div)
           , (Builtin.KeywordMod, Symbol.Mod)
-          , (Builtin.KeywordCharBound, Symbol.CharBound)
           , (Builtin.KeywordExprEnd, Symbol.ExprEnd)
           , (Builtin.KeywordIn, Symbol.In)
           , (Builtin.KeywordAnd, Symbol.And)
@@ -97,7 +96,6 @@ spec = do
           , (Builtin.KeywordUInt32, Symbol.Type)
           , (Builtin.KeywordUInt64, Symbol.Type)
           , (Builtin.KeywordUInt, Symbol.Type)
-          , (Builtin.KeywordChar, Symbol.Type)
           , (Builtin.KeywordVoid, Symbol.Type)
           ]
     forM_ cases $ \(keyword, symbol) -> do

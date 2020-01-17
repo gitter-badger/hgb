@@ -46,8 +46,6 @@ pattern KeywordDiv = "/"
 
 pattern KeywordMod = "%"
 
-pattern KeywordCharBound = "'"
-
 pattern KeywordStrBound = "\""
 
 pattern KeywordExprEnd = "!"
@@ -95,7 +93,5 @@ pattern KeywordUInt64 = "uint64"
 pattern KeywordUInt = "uint"
 
 pattern KeywordDouble = "double"
-
-pattern KeywordChar = "char"
 
 pattern KeywordVoid = "void"

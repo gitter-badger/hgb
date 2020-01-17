@@ -29,7 +29,6 @@ data Symbol
   | Times
   | Div
   | Mod
-  | CharBound
   | StrBound
   | ExprEnd
   | In
@@ -73,7 +72,6 @@ keywordToSymbol Builtin.KeywordMinus = Just Symbol.Minus
 keywordToSymbol Builtin.KeywordTimes = Just Symbol.Times
 keywordToSymbol Builtin.KeywordDiv = Just Symbol.Div
 keywordToSymbol Builtin.KeywordMod = Just Symbol.Mod
-keywordToSymbol Builtin.KeywordCharBound = Just Symbol.CharBound
 keywordToSymbol Builtin.KeywordExprEnd = Just Symbol.ExprEnd
 keywordToSymbol Builtin.KeywordIn = Just Symbol.In
 keywordToSymbol Builtin.KeywordAnd = Just Symbol.And
@@ -97,6 +95,5 @@ keywordToSymbol Builtin.KeywordUInt32 = Just Symbol.Type
 keywordToSymbol Builtin.KeywordUInt64 = Just Symbol.Type
 keywordToSymbol Builtin.KeywordUInt = Just Symbol.Type
 keywordToSymbol Builtin.KeywordDouble = Just Symbol.Type
-keywordToSymbol Builtin.KeywordChar = Just Symbol.Type
 keywordToSymbol Builtin.KeywordVoid = Just Symbol.Type
 keywordToSymbol str = Nothing
