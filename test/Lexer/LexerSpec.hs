@@ -104,3 +104,8 @@ spec = do
   describe "LexOperator" $ do
     it "lexes custom operators as invalid" $ do
       lex "@^@" `shouldBe` [(Token Symbol.Invalid "@^@" 0 3)]
+  describe "lexAlphaKeyword" $ do
+    it "lexes underscores in names correctly" $ do
+      lex "foo_bar" `shouldBe` [(Token Symbol.Name "foo_bar" 0 7)]
+    it "lexes numbers in names correctly" $ do
+      lex "foo22" `shouldBe` [(Token Symbol.Name "foo22" 0 5)]

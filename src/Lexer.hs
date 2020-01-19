@@ -51,7 +51,7 @@ lexAlphaKeyword :: Int -> String -> [Token]
 lexAlphaKeyword i str =
   Token symbol keyword i end : lex' end remainder
   where
-    (keyword, remainder) = span isAlphaNum str
+    (keyword, remainder) = span (isAnyOf [isAlphaNum, (=='_')]) str
     end = i + length keyword
     symbol = case keywordToSymbol keyword of
       Just s -> s
