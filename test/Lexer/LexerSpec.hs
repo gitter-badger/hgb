@@ -9,7 +9,6 @@ import Text.Printf
 
 import Test.Hspec
 
-import qualified Builtin
 import Lexer (lex)
 import Symbol (Symbol(..))
 import Token (Token(..))
@@ -52,58 +51,69 @@ spec = do
       lex "gingerbread" `shouldBe` [(Token Symbol.Name "gingerbread" 0 11)]
   describe "Lex Builtin" $ do
     let cases =
-          [ (Builtin.KeywordIterUpTo, Symbol.IterUpTo)
-          , (Builtin.KeywordNEq, Symbol.NEq)
-          , (Builtin.KeywordGEq, Symbol.GEq)
-          , (Builtin.KeywordLEq, Symbol.LEq)
-          , (Builtin.KeywordEq, Symbol.Eq)
-          , (Builtin.KeywordDot, Symbol.Dot)
-          , (Builtin.KeywordLBracket, Symbol.LBracket)
-          , (Builtin.KeywordRBracket, Symbol.RBracket)
-          , (Builtin.KeywordLParen, Symbol.LParen)
-          , (Builtin.KeywordRParen, Symbol.RParen)
-          , (Builtin.KeywordLBrace, Symbol.LBrace)
-          , (Builtin.KeywordRBrace, Symbol.RBrace)
-          , (Builtin.KeywordTypeDelim, Symbol.TypeDelim)
-          , (Builtin.KeywordValueDelim, Symbol.ValueDelim)
-          , (Builtin.KeywordAssign, Symbol.Assign)
-          , (Builtin.KeywordGT, Symbol.GT)
-          , (Builtin.KeywordLT, Symbol.LT)
-          , (Builtin.KeywordPlus, Symbol.Plus)
-          , (Builtin.KeywordMinus, Symbol.Minus)
-          , (Builtin.KeywordTimes, Symbol.Times)
-          , (Builtin.KeywordDiv, Symbol.Div)
-          , (Builtin.KeywordMod, Symbol.Mod)
-          , (Builtin.KeywordExprEnd, Symbol.ExprEnd)
-          , (Builtin.KeywordIn, Symbol.In)
-          , (Builtin.KeywordAnd, Symbol.And)
-          , (Builtin.KeywordNot, Symbol.Not)
-          , (Builtin.KeywordOr, Symbol.Or)
-          , (Builtin.KeywordFor, Symbol.For)
-          , (Builtin.KeywordWhile, Symbol.While)
-          , (Builtin.KeywordIf, Symbol.If)
-          , (Builtin.KeywordElse, Symbol.Else)
-          , (Builtin.KeywordElseIf, Symbol.ElseIf)
-          , (Builtin.KeywordFunc, Symbol.Func)
-          , (Builtin.KeywordReturn, Symbol.Return)
-          , (Builtin.KeywordInt8, Symbol.Type)
-          , (Builtin.KeywordInt16, Symbol.Type)
-          , (Builtin.KeywordInt32, Symbol.Type)
-          , (Builtin.KeywordInt64, Symbol.Type)
-          , (Builtin.KeywordInt, Symbol.Type)
-          , (Builtin.KeywordUInt8, Symbol.Type)
-          , (Builtin.KeywordUInt16, Symbol.Type)
-          , (Builtin.KeywordUInt32, Symbol.Type)
-          , (Builtin.KeywordUInt64, Symbol.Type)
-          , (Builtin.KeywordUInt, Symbol.Type)
-          , (Builtin.KeywordVoid, Symbol.Type)
+          [ ("->", Symbol.IterUpTo)
+          , ("=/=", Symbol.NEq)
+          , (">=", Symbol.GEq)
+          , ("<=", Symbol.LEq)
+          , ("==", Symbol.Eq)
+          , (".", Symbol.Dot)
+          , ("[", Symbol.LBracket)
+          , ("]", Symbol.RBracket)
+          , ("(", Symbol.LParen)
+          , (")", Symbol.RParen)
+          , ("{", Symbol.LBrace)
+          , ("}", Symbol.RBrace)
+          , (":", Symbol.TypeDelim)
+          , (",", Symbol.ValueDelim)
+          , ("=", Symbol.Assign)
+          , (">", Symbol.GT)
+          , ("<", Symbol.LT)
+          , ("+", Symbol.Plus)
+          , ("-", Symbol.Minus)
+          , ("*", Symbol.Times)
+          , ("/", Symbol.Div)
+          , ("%", Symbol.Mod)
+          , ("!", Symbol.ExprEnd)
+          , ("in", Symbol.In)
+          , ("and", Symbol.And)
+          , ("not", Symbol.Not)
+          , ("or", Symbol.Or)
+          , ("for", Symbol.For)
+          , ("while", Symbol.While)
+          , ("if", Symbol.If)
+          , ("else", Symbol.Else)
+          , ("elseif", Symbol.ElseIf)
+          , ("fun", Symbol.Func)
+          , ("return", Symbol.Return)
+          , ("int8", Symbol.Type)
+          , ("int16", Symbol.Type)
+          , ("int32", Symbol.Type)
+          , ("int64", Symbol.Type)
+          , ("int", Symbol.Type)
+          , ("uint8", Symbol.Type)
+          , ("uint16", Symbol.Type)
+          , ("uint32", Symbol.Type)
+          , ("uint64", Symbol.Type)
+          , ("uint", Symbol.Type)
+          , ("double", Symbol.Type)
+          , ("void", Symbol.Type)
           ]
     forM_ cases $ \(keyword, symbol) -> do
       it ("lexes " ++ (show symbol) ++ ": " ++ keyword) $ do
         lex keyword `shouldBe` [(Token symbol keyword 0 (length keyword))]
   describe "LexOperator" $ do
     it "lexes custom operators as invalid" $ do
-      lex "@^@" `shouldBe` [(Token Symbol.Invalid "@^@" 0 3)]
+      lex "@^@" `shouldBe`
+        [ (Token Symbol.Invalid "@" 0 1)
+        , (Token Symbol.Invalid "^" 1 2)
+        , (Token Symbol.Invalid "@" 2 3)
+        ]
+    it "does not lex combinations as invalid" $ do
+      lex "=/=!:" `shouldBe`
+        [ (Token Symbol.NEq "=/=" 0 3)
+        , (Token Symbol.ExprEnd "!" 3 4)
+        , (Token Symbol.TypeDelim ":" 4 5)
+        ]
   describe "lexAlphaKeyword" $ do
     it "lexes underscores in names correctly" $ do
       lex "foo_bar" `shouldBe` [(Token Symbol.Name "foo_bar" 0 7)]
