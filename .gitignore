@@ -2,6 +2,7 @@
 *
 !*.*
 !*/
+!LICENSE
 
 # Haskell output
 *.hi
