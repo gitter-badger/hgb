@@ -41,11 +41,24 @@ spec = do
         , (Token Symbol.StrBound "\"" 10 11)
         ]
   describe "LexNumber" $ do
-    it "lexes numbers correctly" $ do
-      lex "123" `shouldBe` [(Token Symbol.Number "123" 0 3)]
-    it "lexes after number end" $ do
-      lex "123 456" `shouldBe`
-        [(Token Symbol.Number "123" 0 3), (Token Symbol.Number "456" 4 7)]
+    describe "lexes whole numbers" $ do
+      it "lexes general whole numbers" $ do
+        lex "123" `shouldBe` [(Token Symbol.Number "123" 0 3)]
+      it "lexes after number end" $ do
+        lex "123 456" `shouldBe`
+          [(Token Symbol.Number "123" 0 3), (Token Symbol.Number "456" 4 7)]
+    describe "lexes floating point numbers" $ do
+      it "lexes general floating point numbers" $ do
+        lex "123.456" `shouldBe` [(Token Symbol.Number "123.456" 0 7)]
+      it "does not lex prefixed decimal" $ do
+        lex ".456" `shouldBe`
+          [(Token Symbol.Dot "." 0 1), (Token Symbol.Number "456" 1 4)]
+      it "lexes after number end" $ do
+        lex "12.34.56" `shouldBe`
+          [ (Token Symbol.Number "12.34" 0 5)
+          , (Token Symbol.Dot "." 5 6)
+          , (Token Symbol.Number "56" 6 8)
+          ]
   describe "LexKeyword" $ do
     it "lexes custom keywords correctly" $ do
       lex "gingerbread" `shouldBe` [(Token Symbol.Name "gingerbread" 0 11)]

@@ -42,8 +42,19 @@ lexStr i (delim:xs) =
 lexNumber :: Int -> String -> [Token]
 lexNumber i str = Token Symbol.Number numStr i end : lex' end remainder
   where
-    (numStr, remainder) = span isDigit str
+    (numStr, remainder) = getNumber "" str False
     end = i + length numStr
+    -- Lexes a number that may have a decimal. The third parameter specifies whether a decimal has
+    -- already been seen in the number.
+    getNumber :: String -> String -> Bool -> (String, String)
+    getNumber num [] _ = (num, [])
+    getNumber num all@(next:rest) seenDecimal
+      | next == '.' =
+        if seenDecimal
+          then (num, all)
+          else getNumber (num ++ [next]) rest True
+      | isDigit next = getNumber (num ++ [next]) rest seenDecimal
+      | otherwise = (num, all)
 
 lexAlphaKeyword :: Int -> String -> [Token]
 lexAlphaKeyword i str = Token symbol keyword i end : lex' end remainder
