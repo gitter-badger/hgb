@@ -42,8 +42,10 @@ spec = do
         ]
   describe "LexNumber" $ do
     describe "lexes whole numbers" $ do
-      it "lexes general whole numbers" $ do
+      it "lexes whole numbers" $ do
         lex "123" `shouldBe` [(Token Symbol.Number "123" 0 3)]
+      it "lexes whole numbers with zero prefix" $ do
+        lex "01" `shouldBe` [(Token Symbol.Number "01" 0 2)]
       it "lexes after number end" $ do
         lex "123 456" `shouldBe`
           [(Token Symbol.Number "123" 0 3), (Token Symbol.Number "456" 4 7)]
