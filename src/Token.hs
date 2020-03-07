@@ -2,13 +2,15 @@ module Token where
 
 import Symbol (Symbol(..))
 
+type IndexString = [Index Char]
+data Index a = Index a Int
+
+instance Functor Index where
+  fmap f (Index a i) = Index (f a) i
+
 data Token =
   Token
     { symbol :: Symbol
-    , content :: String
-                    -- Refers to the index of the first character of the token in the source code
-    , start :: Int
-                    -- Refers to the index of the character after the last
-    , end :: Int
+    , content :: IndexString
     }
   deriving (Eq, Show)

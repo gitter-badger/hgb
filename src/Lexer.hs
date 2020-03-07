@@ -3,28 +3,36 @@ module Lexer where
 import Data.Char hiding (drop, take)
 import Data.List hiding (drop, take)
 import Prelude hiding (lex)
+import Control.Lens.Operators ((<&>))
+
 
 import Symbol (Symbol)
 import qualified Symbol (Symbol(..))
 import Token (Token(..))
 
-lex :: String -> [Token]
-lex = lex' 0
+index :: String -> IndexString
+index = index' 0
+  where
+    index' :: Int -> String -> IndexString
+    index' _ "" = []
+    index' i (x:xs) = Index x i : index' (i + 1) xs
 
-lex' :: Int -> String -> [Token]
-lex' _ "" = []
-lex' i all@(x:xs)
-  | isSpace x = lex' (i + 1) xs
-  | [x] == "\"" =
+lex :: String -> [Token]
+lex = (lex' . index)
+
+lex' :: IndexString -> [Token]
+lex' "" = []
+lex' all@(x:xs)
+  | isSpace x = lex' xs
+  | "\"" == <$> x
     let (tokens, afterTokens) = lexStr i all
-        endIndex = end (last tokens)
      in tokens ++ lex' endIndex afterTokens
   | otherwise =
     let (token, afterToken)
           | isDigit x = lexNumber i all
           | isAlpha x = lexAlphaKeyword i all
           | otherwise = lexOperatorOrPunctuation i all
-     in token : lex' (end token) afterToken
+     in token : lex' afterToken
 
 lexStr :: Int -> String -> ([Token], String)
 lexStr i (delim:afterOpener) =
@@ -33,7 +41,7 @@ lexStr i (delim:afterOpener) =
       ([openingDelimToken, contentToken, closingDelimToken], afterCloser)
     _ -> ([openingDelimToken, contentToken], afterContent)
   where
-    (contentStr, afterContent) = break (== delim) afterOpener
+    (contentStr, afterContent) = break (<$> == delim) afterOpener
     contentStart = i + 1
     contentEnd = contentStart + length contentStr
     openingDelimToken = Token Symbol.StrBound [delim] i contentStart
