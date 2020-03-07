@@ -15,51 +15,52 @@ lex' :: Int -> String -> [Token]
 lex' _ "" = []
 lex' i all@(x:xs)
   | isSpace x = lex' (i + 1) xs
-  | [x] == "\"" = lexStr i all
-  | isDigit x = lexNumber i all
-  | isAlpha x = lexAlphaKeyword i all
-  | otherwise = lexOperatorOrPunctuation i all
+  | [x] == "\"" =
+    let (tokens, afterTokens) = lexStr i all
+        endIndex = end (last tokens)
+     in tokens ++ lex' endIndex afterTokens
+  | otherwise =
+    let (token, afterToken)
+          | isDigit x = lexNumber i all
+          | isAlpha x = lexAlphaKeyword i all
+          | otherwise = lexOperatorOrPunctuation i all
+     in token : lex' (end token) afterToken
 
-lexStr :: Int -> String -> [Token]
-lexStr i (delim:xs) =
-  Token Symbol.StrBound [delim] i start : contentToken : postContent
-    -- Parse content after the opening string delimiter, returning as much as possible of
-    -- 1. String content
-    -- 2. String closing delimiter
-    -- 3. Tokens after string
+lexStr :: Int -> String -> ([Token], String)
+lexStr i (delim:afterOpener) =
+  case afterContent of
+    (_:afterCloser) ->
+      ([openingDelimToken, contentToken, closingDelimToken], afterCloser)
+    _ -> ([openingDelimToken, contentToken], afterContent)
   where
-    (contentStr, postContentStr) = break (== delim) xs
-    start = i + 1
-    end = start + length contentStr
-    contentToken = Token Symbol.String contentStr start end
-    postContent =
-      case postContentStr of
-        (endDelim:remainder) ->
-          Token Symbol.StrBound [endDelim] end (end + 1) :
-          lex' (end + 1) remainder
-        _ -> []
+    (contentStr, afterContent) = break (== delim) afterOpener
+    contentStart = i + 1
+    contentEnd = contentStart + length contentStr
+    openingDelimToken = Token Symbol.StrBound [delim] i contentStart
+    contentToken = Token Symbol.String contentStr contentStart contentEnd
+    closingDelimToken =
+      Token Symbol.StrBound [delim] contentEnd (contentEnd + 1)
 
-lexNumber :: Int -> String -> [Token]
-lexNumber i str = Token Symbol.Number numStr i end : lex' end remainder
+lexNumber :: Int -> String -> (Token, String)
+lexNumber i str = (Token Symbol.Number numStr i end, afterNum)
   where
-    (numStr, remainder) = getNumber "" str False
+    (numStr, afterNum) = getNumber str
     end = i + length numStr
+    getNumber :: String -> (String, String)
     -- Lexes a number that may have a decimal. The third parameter specifies whether a decimal has
     -- already been seen in the number.
-    getNumber :: String -> String -> Bool -> (String, String)
-    getNumber num [] _ = (num, [])
-    getNumber num all@(next:rest) seenDecimal
-      | next == '.' =
-        if seenDecimal
-          then (num, all)
-          else getNumber (num ++ [next]) rest True
-      | isDigit next = getNumber (num ++ [next]) rest seenDecimal
-      | otherwise = (num, all)
+    getNumber str =
+      case afterDigits of
+        ('.':afterDot) -> (digits ++ "." ++ decimals, afterDecimals)
+          where (decimals, afterDecimals) = span isDigit afterDot
+        _ -> (digits, afterDigits)
+      where
+        (digits, afterDigits) = span isDigit str
 
-lexAlphaKeyword :: Int -> String -> [Token]
-lexAlphaKeyword i str = Token symbol keyword i end : lex' end remainder
+lexAlphaKeyword :: Int -> String -> (Token, String)
+lexAlphaKeyword i str = (Token symbol keyword i end, afterKeyword)
   where
-    (keyword, remainder) = span (isAnyOf [isAlphaNum, (== '_')]) str
+    (keyword, afterKeyword) = span (isAnyOf [isAlphaNum, (== '_')]) str
     end = i + length keyword
     symbol =
       case keyword of
@@ -88,8 +89,8 @@ lexAlphaKeyword i str = Token symbol keyword i end : lex' end remainder
         "void" -> Symbol.Type
         _ -> Symbol.Name
 
-lexOperatorOrPunctuation :: Int -> String -> [Token]
-lexOperatorOrPunctuation i str = Token symbol tok i end : lex' end remainder
+lexOperatorOrPunctuation :: Int -> String -> (Token, String)
+lexOperatorOrPunctuation i str = (Token symbol tok i end, remainder)
   where
     (symbol, tok, remainder) = getSymbol "" str
     end = i + length tok
