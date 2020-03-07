@@ -15,51 +15,54 @@ lex' :: Int -> String -> [Token]
 lex' _ "" = []
 lex' i all@(x:xs)
   | isSpace x = lex' (i + 1) xs
-  | [x] == "\"" = lexStr i all
-  | isDigit x = lexNumber i all
-  | isAlpha x = lexAlphaKeyword i all
-  | otherwise = lexOperatorOrPunctuation i all
+  | [x] == "\"" =
+      let (tokens@[_, _, delim], afterTokens) = lexStr i all
+      in tokens ++ lex' (end delim) afterTokens
+  | otherwise = token : lex' (end token) afterToken
+  where
+    (token, afterToken)
+      | isDigit x = lexNumber i all
+      | isAlpha x = lexAlphaKeyword i all
+      | otherwise = lexOperatorOrPunctuation i all
 
-lexStr :: Int -> String -> [Token]
-lexStr i (delim:xs) =
-  Token Symbol.StrBound [delim] i start : contentToken : postContent
+
+lexStr :: Int -> String -> ([Token], String)
+lexStr i (delim:afterOpener) =
+  ([openingDelimToken, contentToken, closingDelimToken], afterCloser)
     -- Parse content after the opening string delimiter, returning as much as possible of
     -- 1. String content
     -- 2. String closing delimiter
     -- 3. Tokens after string
   where
-    (contentStr, postContentStr) = break (== delim) xs
-    start = i + 1
-    end = start + length contentStr
-    contentToken = Token Symbol.String contentStr start end
-    postContent =
-      case postContentStr of
-        (endDelim:remainder) ->
-          Token Symbol.StrBound [endDelim] end (end + 1) :
-          lex' (end + 1) remainder
-        _ -> []
+    (contentStr, (delim:afterCloser)) = break (== delim) afterOpener
+    contentStart = i + 1
+    contentEnd = start + length contentStr
 
-lexNumber :: Int -> String -> [Token]
-lexNumber i str = Token Symbol.Number numStr i end : lex' end remainder
+    openingDelimToken = Token Symbol.StrBound [delim] i contentStart
+    contentToken = Token Symbol.String contentStr contentStart contentEnd
+    closingDelimToken =
+      Token Symbol.StrBound [delim] contentEnd (contentEnd + 1)
+
+lexNumber :: Int -> String -> (Token, String)
+lexNumber i str = (Token Symbol.Number numStr i end, afterNum)
   where
-    (numStr, remainder) = getNumber "" str False
+    (numStr, afterNum) = getNumber "" str False
     end = i + length numStr
+    getNumber :: String -> Bool -> (String, String)
     -- Lexes a number that may have a decimal. The third parameter specifies whether a decimal has
     -- already been seen in the number.
-    getNumber :: String -> String -> Bool -> (String, String)
-    getNumber num [] _ = (num, [])
-    getNumber num all@(next:rest) seenDecimal
-      | next == '.' =
-        if seenDecimal
-          then (num, all)
-          else getNumber (num ++ [next]) rest True
-      | isDigit next = getNumber (num ++ [next]) rest seenDecimal
-      | otherwise = (num, all)
+    getNumber str seenDecimal
+      | x == '.' && not seenDecimal = (digits ++ "." ++ decimals, afterDecimals)
+      | otherwise = (digits, afterDigits)
+      where
+        (digits, afterDigits@(x:xs)) = span isDigit str
+        (decimals, afterDecimals) = span isDigit afterDigits
 
-lexAlphaKeyword :: Int -> String -> [Token]
-lexAlphaKeyword i str = Token symbol keyword i end : lex' end remainder
+
+lexAlphaKeyword :: Int -> String -> (Token, String)
+lexAlphaKeyword i str = (Token symbol keyword i end, afterKeyword)
   where
-    (keyword, remainder) = span (isAnyOf [isAlphaNum, (== '_')]) str
+    (keyword, afterKeyword) = span (isAnyOf [isAlphaNum, (== '_')]) str
     end = i + length keyword
     symbol =
       case keyword of
@@ -88,8 +91,8 @@ lexAlphaKeyword i str = Token symbol keyword i end : lex' end remainder
         "void" -> Symbol.Type
         _ -> Symbol.Name
 
-lexOperatorOrPunctuation :: Int -> String -> [Token]
-lexOperatorOrPunctuation i str = Token symbol tok i end : lex' end remainder
+lexOperatorOrPunctuation :: Int -> String -> (Token, String)
+lexOperatorOrPunctuation i str = (Token symbol tok i end, remainder)
   where
     (symbol, tok, remainder) = getSymbol "" str
     end = i + length tok
