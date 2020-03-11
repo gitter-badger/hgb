@@ -3,12 +3,11 @@ module Lexer where
 import Data.Char hiding (drop, take)
 import Data.List hiding (drop, take)
 import Prelude hiding (lex)
-import Control.Lens.Operators ((<&>))
 
 
 import Symbol (Symbol)
 import qualified Symbol (Symbol(..))
-import Token (Token(..))
+import Token
 
 index :: String -> IndexString
 index = index' 0
@@ -21,57 +20,54 @@ lex :: String -> [Token]
 lex = (lex' . index)
 
 lex' :: IndexString -> [Token]
-lex' "" = []
+lex' [] = []
 lex' all@(x:xs)
-  | isSpace x = lex' xs
-  | "\"" == <$> x
-    let (tokens, afterTokens) = lexStr i all
-     in tokens ++ lex' endIndex afterTokens
+  | isSpace c = lex' xs
+  | c == '\"' =
+    let (tokens, afterTokens) = lexStr all
+     in tokens ++ lex' afterTokens
   | otherwise =
     let (token, afterToken)
-          | isDigit x = lexNumber i all
-          | isAlpha x = lexAlphaKeyword i all
-          | otherwise = lexOperatorOrPunctuation i all
+          | isDigit c = lexNumber all
+          | isAlpha c = lexAlphaKeyword all
+          | otherwise = lexOperatorOrPunctuation all
      in token : lex' afterToken
+  where
+    c = val x
 
-lexStr :: Int -> String -> ([Token], String)
-lexStr i (delim:afterOpener) =
+lexStr :: IndexString -> ([Token], IndexString)
+lexStr (delim:afterOpener) =
   case afterContent of
     (_:afterCloser) ->
       ([openingDelimToken, contentToken, closingDelimToken], afterCloser)
     _ -> ([openingDelimToken, contentToken], afterContent)
   where
-    (contentStr, afterContent) = break (<$> == delim) afterOpener
-    contentStart = i + 1
-    contentEnd = contentStart + length contentStr
-    openingDelimToken = Token Symbol.StrBound [delim] i contentStart
-    contentToken = Token Symbol.String contentStr contentStart contentEnd
-    closingDelimToken =
-      Token Symbol.StrBound [delim] contentEnd (contentEnd + 1)
+    (contentStr, afterContent) = break (equalVal delim) afterOpener
+    openingDelimToken = Token Symbol.StrBound [delim]
+    contentToken = Token Symbol.String contentStr
+    closingDelimToken = Token Symbol.StrBound [delim]
 
-lexNumber :: Int -> String -> (Token, String)
-lexNumber i str = (Token Symbol.Number numStr i end, afterNum)
+lexNumber :: IndexString -> (Token, IndexString)
+lexNumber str = (Token Symbol.Number numStr, afterNum)
   where
     (numStr, afterNum) = getNumber str
-    end = i + length numStr
-    getNumber :: String -> (String, String)
+    getNumber :: IndexString -> (IndexString, IndexString)
     -- Lexes a number that may have a decimal. The third parameter specifies whether a decimal has
     -- already been seen in the number.
-    getNumber str =
-      case afterDigits of
-        ('.':afterDot) -> (digits ++ "." ++ decimals, afterDecimals)
-          where (decimals, afterDecimals) = span isDigit afterDot
-        _ -> (digits, afterDigits)
+    getNumber str
+      | isOfVal '.' x = (digits ++ [x] ++ decimals, afterDecimals)
+      | otherwise = (digits, afterDigits)
       where
-        (digits, afterDigits) = span isDigit str
+        (digits, afterDigits@(x:xs)) = span (isDigit . val) str
+        (decimals, afterDecimals) = span (isDigit . val) xs
 
-lexAlphaKeyword :: Int -> String -> (Token, String)
-lexAlphaKeyword i str = (Token symbol keyword i end, afterKeyword)
+lexAlphaKeyword :: IndexString -> (Token, IndexString)
+lexAlphaKeyword str = (Token symbol keyword, afterKeyword)
   where
-    (keyword, afterKeyword) = span (isAnyOf [isAlphaNum, (== '_')]) str
-    end = i + length keyword
+    (keyword, afterKeyword) = span (isAnyOf [isAlphaNum, (== '_')] . val) str
+    keywordStr = toString keyword
     symbol =
-      case keyword of
+      case keywordStr of
         "in" -> Symbol.In
         "and" -> Symbol.And
         "not" -> Symbol.Not
@@ -97,17 +93,16 @@ lexAlphaKeyword i str = (Token symbol keyword i end, afterKeyword)
         "void" -> Symbol.Type
         _ -> Symbol.Name
 
-lexOperatorOrPunctuation :: Int -> String -> (Token, String)
-lexOperatorOrPunctuation i str = (Token symbol tok i end, remainder)
+lexOperatorOrPunctuation :: IndexString -> (Token, IndexString)
+lexOperatorOrPunctuation str = (Token symbol tok, remainder)
   where
-    (symbol, tok, remainder) = getSymbol "" str
-    end = i + length tok
-    getSymbol :: String -> String -> (Symbol, String, String)
+    (symbol, tok, remainder) = getSymbol [] str
+    getSymbol :: IndexString -> IndexString -> (Symbol, IndexString, IndexString)
     getSymbol main [] = (Symbol.Invalid, main, [])
     getSymbol main (next:rest)
-      | not (isSymbol next || isPunctuation next) = (Symbol.Invalid, tok, rest)
+      | not (isAnyOf [isSymbol, isPunctuation] (val next)) = (Symbol.Invalid, tok, rest)
       | otherwise =
-        case tok of
+        case toString tok of
           "->" -> (Symbol.IterUpTo, tok, rest)
           "-" ->
             case getSymbol tok rest of
