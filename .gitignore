@@ -1,10 +1,5 @@
-# Binaries
-*
-!*.*
-!*/
-!LICENSE
-
 # Haskell output
 *.hi
 *.o
 .stack-work
+dist/

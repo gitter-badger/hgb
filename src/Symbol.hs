@@ -1,8 +1,9 @@
-module Symbol where
+module Symbol
+  ( Symbol(..)
+  ) where
 
+import Data.Function ((&))
 import Data.List
-import Data.Map
-import Data.Set
 
 data Symbol
   = IterUpTo
@@ -45,4 +46,7 @@ data Symbol
   | String
   | Number
   | Name
+  | EndOfFile
+  -- TODO(ayazhafiz): it would be nicer if we showed the expected symbol token rather than the
+  -- symbol name.
   deriving (Eq, Show)

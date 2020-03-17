@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 358441cd232d4e466fe2052b3591b88124d3aca96429ca03bbf3d7005cce7cff
+-- hash: bc147616d3308dcc9e86f001571c7fe78912495bd3a5effc84cb7b053970c1d6
 
 name:           hgb
 version:        0.1.0.0
@@ -27,16 +27,20 @@ source-repository head
 
 library
   exposed-modules:
+      Error
+      Grammar
       Lexer
       Lib
+      Parser
       Symbol
       Token
+      Utils
   other-modules:
       Paths_hgb
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      base >=4.8 && <5
     , containers
   default-language: Haskell2010
 
@@ -48,7 +52,7 @@ executable hgb-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      base >=4.8 && <5
     , containers
     , hgb
   default-language: Haskell2010
@@ -57,16 +61,20 @@ test-suite hgb-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Error.ErrorSpec
+      Grammar.GrammarSpec
       Lexer.LexerSpec
+      Parser.ParserSpec
       Symbol.SymbolSpec
       Token.TokenSpec
+      Utils.UtilsSpec
       Paths_hgb
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
-    , base >=4.7 && <5
+    , base >=4.8 && <5
     , containers
     , hgb
     , hspec

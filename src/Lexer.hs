@@ -1,4 +1,6 @@
-module Lexer where
+module Lexer
+  ( lex
+  ) where
 
 import Data.Char hiding (drop, take)
 import Data.List hiding (drop, take)
@@ -7,12 +9,16 @@ import Prelude hiding (lex)
 import Symbol (Symbol)
 import qualified Symbol (Symbol(..))
 import Token (Token(..))
+import Utils
+
+endOfFileToken :: Int -> Token
+endOfFileToken i = Token Symbol.EndOfFile "" i i
 
 lex :: String -> [Token]
 lex = lex' 0
 
 lex' :: Int -> String -> [Token]
-lex' _ "" = []
+lex' i "" = [endOfFileToken i]
 lex' i all@(x:xs)
   | isSpace x = lex' (i + 1) xs
   | [x] == "\"" =
@@ -89,59 +95,49 @@ lexAlphaKeyword i str = (Token symbol keyword i end, afterKeyword)
         "void" -> Symbol.Type
         _ -> Symbol.Name
 
+type SymbolWithContent = (Symbol, String, String)
+
 lexOperatorOrPunctuation :: Int -> String -> (Token, String)
 lexOperatorOrPunctuation i str = (Token symbol tok i end, remainder)
   where
     (symbol, tok, remainder) = getSymbol "" str
     end = i + length tok
-    getSymbol :: String -> String -> (Symbol, String, String)
-    getSymbol main [] = (Symbol.Invalid, main, [])
-    getSymbol main (next:rest)
-      | not (isSymbol next || isPunctuation next) = (Symbol.Invalid, tok, rest)
-      | otherwise =
-        case tok of
-          "->" -> (Symbol.IterUpTo, tok, rest)
-          "-" ->
-            case getSymbol tok rest of
-              (Symbol.Invalid, _, _) -> (Symbol.Minus, tok, rest)
-              result -> result
-          "=/=" -> (Symbol.NEq, tok, rest)
-          "=/" ->
-            case getSymbol tok rest of
-              (Symbol.Invalid, _, _) -> (Symbol.Invalid, tok, rest)
-              result -> result
-          "==" -> (Symbol.Eq, tok, rest)
-          "=" ->
-            case getSymbol tok rest of
-              (Symbol.Invalid, _, _) -> (Symbol.Assign, tok, rest)
-              result -> result
-          ">=" -> (Symbol.GEq, tok, rest)
-          ">" ->
-            case getSymbol tok rest of
-              (Symbol.Invalid, _, _) -> (Symbol.GT, tok, rest)
-              result -> result
-          "<=" -> (Symbol.LEq, tok, rest)
-          "<" ->
-            case getSymbol tok rest of
-              (Symbol.Invalid, _, _) -> (Symbol.LT, tok, rest)
-              result -> result
-          "." -> (Symbol.Dot, tok, rest)
-          "[" -> (Symbol.LBracket, tok, rest)
-          "]" -> (Symbol.RBracket, tok, rest)
-          "(" -> (Symbol.LParen, tok, rest)
-          ")" -> (Symbol.RParen, tok, rest)
-          "{" -> (Symbol.LBrace, tok, rest)
-          "}" -> (Symbol.RBrace, tok, rest)
-          ":" -> (Symbol.TypeDelim, tok, rest)
-          "," -> (Symbol.ValueDelim, tok, rest)
-          "+" -> (Symbol.Plus, tok, rest)
-          "*" -> (Symbol.Times, tok, rest)
-          "/" -> (Symbol.Div, tok, rest)
-          "%" -> (Symbol.Mod, tok, rest)
-          "!" -> (Symbol.ExprEnd, tok, rest)
-          _ -> (Symbol.Invalid, tok, rest)
+    getSymbol :: String -> String -> SymbolWithContent
+    getSymbol main (next:rest) =
+      case tok of
+        "->" -> (Symbol.IterUpTo, tok, rest)
+        "-" -> getSymbol `backupInvalid` (Symbol.Minus, tok, rest)
+        "=/=" -> (Symbol.NEq, tok, rest)
+        "=/" -> getSymbol tok rest
+        "==" -> (Symbol.Eq, tok, rest)
+        "=" -> getSymbol `backupInvalid` (Symbol.Assign, tok, rest)
+        ">=" -> (Symbol.GEq, tok, rest)
+        ">" -> getSymbol `backupInvalid` (Symbol.GT, tok, rest)
+        "<=" -> (Symbol.LEq, tok, rest)
+        "<" -> getSymbol `backupInvalid` (Symbol.LT, tok, rest)
+        "." -> (Symbol.Dot, tok, rest)
+        "[" -> (Symbol.LBracket, tok, rest)
+        "]" -> (Symbol.RBracket, tok, rest)
+        "(" -> (Symbol.LParen, tok, rest)
+        ")" -> (Symbol.RParen, tok, rest)
+        "{" -> (Symbol.LBrace, tok, rest)
+        "}" -> (Symbol.RBrace, tok, rest)
+        ":" -> (Symbol.TypeDelim, tok, rest)
+        "," -> (Symbol.ValueDelim, tok, rest)
+        "+" -> (Symbol.Plus, tok, rest)
+        "*" -> (Symbol.Times, tok, rest)
+        "/" -> (Symbol.Div, tok, rest)
+        "%" -> (Symbol.Mod, tok, rest)
+        "!" -> (Symbol.ExprEnd, tok, rest)
+        _ -> (Symbol.Invalid, tok, rest)
       where
         tok = main ++ [next]
-
-isAnyOf :: [c -> Bool] -> c -> Bool
-isAnyOf p c = any ($c) p
+    backupInvalid ::
+         (String -> String -> SymbolWithContent)
+      -> SymbolWithContent
+      -> SymbolWithContent
+    backupInvalid _ backup@(_, _, []) = backup
+    backupInvalid getSymbol backup@(_, contentToken, contentRest) =
+      case getSymbol contentToken contentRest of
+        (Symbol.Invalid, _, _) -> backup
+        token -> token
