@@ -1,10 +1,12 @@
 module Error
   ( Error(..)
   , ErrorType(..)
+  , Expectation(..)
   ) where
 
-import Symbol (Symbol(..))
-import Token (Token)
+import Symbol (Symbol(..), symbolToStr)
+import Token (Token(..))
+import Utils (Span)
 
 displayOptions :: Show a => [a] -> String
 displayOptions [one] = show one -- Option
@@ -20,20 +22,30 @@ displayOptions all = concat all -- Option, AnotherOption, ..., or YetAnotherOpti
       -- Option, ...
         (first:rest) -> show first ++ ", " ++ concat rest
 
+data Expectation
+  = Expression
+  | ExpressionTerminator
+  | ExpressionOrDelimiter
+  | EnumerationListDelimiter [Symbol]
+  | CloseToken Symbol
+
+instance Show Expectation where
+  show Expression = "an expression"
+  show ExpressionTerminator = show (symbolToStr Symbol.ExprEnd)
+  show ExpressionOrDelimiter = show Expression ++ " or delimiter"
+  show (EnumerationListDelimiter options) = displayOptions (map symbolToStr options)
+  show (CloseToken closer) = show (symbolToStr closer)
+
 data ErrorType =
-  ExpectedSymbol
-    { expected :: [Symbol]
-    , actual :: Symbol
-    }
+  Expected Expectation Token
 
 instance Show ErrorType where
-  show (ExpectedSymbol expected actual) =
-    "expected " ++
-    displayOptions expected ++ "; got " ++ displayOptions [actual]
+  show (Expected expectation token) =
+    "expected " ++ show expectation ++ ", got " ++ show (content token)
 
--- TODO(ayazhafiz): include the location of an error
-newtype Error =
-  Error ErrorType
+data Error =
+  Error ErrorType Span
 
 instance Show Error where
-  show (Error errorType) = "Error: " ++ show errorType
+  show (Error errorType span) =
+    "Error: " ++ show errorType ++ " at " ++ show span

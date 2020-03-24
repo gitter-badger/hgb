@@ -12,7 +12,7 @@ import Token (Token(..))
 import Utils
 
 endOfFileToken :: Int -> Token
-endOfFileToken i = Token Symbol.EndOfFile "" i i
+endOfFileToken i = Token Symbol.EndOfFile "<EOF>" (Span i i)
 
 lex :: String -> [Token]
 lex = lex' 0
@@ -23,14 +23,14 @@ lex' i all@(x:xs)
   | isSpace x = lex' (i + 1) xs
   | [x] == "\"" =
     let (tokens, afterTokens) = lexStr i all
-        endIndex = end (last tokens)
+        endIndex = end $ sourceSpan ( last tokens )
      in tokens ++ lex' endIndex afterTokens
   | otherwise =
     let (token, afterToken)
           | isDigit x = lexNumber i all
           | isAlpha x = lexAlphaKeyword i all
           | otherwise = lexOperatorOrPunctuation i all
-     in token : lex' (end token) afterToken
+     in token : lex' (end $ sourceSpan token) afterToken
 
 lexStr :: Int -> String -> ([Token], String)
 lexStr i (delim:afterOpener) =
@@ -42,13 +42,13 @@ lexStr i (delim:afterOpener) =
     (contentStr, afterContent) = break (== delim) afterOpener
     contentStart = i + 1
     contentEnd = contentStart + length contentStr
-    openingDelimToken = Token Symbol.StrBound [delim] i contentStart
-    contentToken = Token Symbol.String contentStr contentStart contentEnd
+    openingDelimToken = Token Symbol.StrBound [delim] (Span i contentStart)
+    contentToken = Token Symbol.String contentStr (Span contentStart contentEnd)
     closingDelimToken =
-      Token Symbol.StrBound [delim] contentEnd (contentEnd + 1)
+      Token Symbol.StrBound [delim] (Span contentEnd (contentEnd + 1))
 
 lexNumber :: Int -> String -> (Token, String)
-lexNumber i str = (Token Symbol.Number numStr i end, afterNum)
+lexNumber i str = (Token Symbol.Number numStr (Span i end), afterNum)
   where
     (numStr, afterNum) = getNumber str
     end = i + length numStr
@@ -64,7 +64,7 @@ lexNumber i str = (Token Symbol.Number numStr i end, afterNum)
         (digits, afterDigits) = span isDigit str
 
 lexAlphaKeyword :: Int -> String -> (Token, String)
-lexAlphaKeyword i str = (Token symbol keyword i end, afterKeyword)
+lexAlphaKeyword i str = (Token symbol keyword (Span i end ), afterKeyword)
   where
     (keyword, afterKeyword) = span (isAnyOf [isAlphaNum, (== '_')]) str
     end = i + length keyword
@@ -98,7 +98,7 @@ lexAlphaKeyword i str = (Token symbol keyword i end, afterKeyword)
 type SymbolWithContent = (Symbol, String, String)
 
 lexOperatorOrPunctuation :: Int -> String -> (Token, String)
-lexOperatorOrPunctuation i str = (Token symbol tok i end, remainder)
+lexOperatorOrPunctuation i str = (Token symbol tok (Span i end ), remainder)
   where
     (symbol, tok, remainder) = getSymbol "" str
     end = i + length tok

@@ -1,5 +1,6 @@
 module Symbol
   ( Symbol(..)
+  , symbolToStr
   ) where
 
 import Data.Function ((&))
@@ -50,3 +51,8 @@ data Symbol
   -- TODO(ayazhafiz): it would be nicer if we showed the expected symbol token rather than the
   -- symbol name.
   deriving (Eq, Show)
+
+symbolToStr :: Symbol -> String
+symbolToStr ExprEnd = "!"
+symbolToStr RParen = ")"
+symbolToStr ValueDelim = ","

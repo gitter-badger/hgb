@@ -93,27 +93,46 @@ spec = do
   describe "errors" $
     forM_
       [ ( "invalid expressions"
-        , ["* 2!", "5 + * 5!", "+ * 5!", "* (2 + 3)"]
-        , "Error: expected Plus, Minus, LParen, Number, Name, or StrBound; got Times")
+        , [ ("* 2!", "0:1")
+          , ("5 + * 5!", "4:5")
+          , ("+ * 5!", "2:3")
+          , ("* (2 + 3)", "0:1")
+          ]
+        , "Error: expected an expression, got \"*\" at ")
       , ( "missing expression ending"
-        , ["f()", "name", "4", "4 + 5", "(2 + 3)"]
-        , "Error: expected Plus, Minus, Times, Div, Mod, RParen, ExprEnd, or ValueDelim; got EndOfFile")
+        , [ ("f()", "3:3")
+          , ("name", "4:4")
+          , ("4", "1:1")
+          , ("4 + 5", "5:5")
+          , ("(2 + 3)", "7:7")
+          ]
+        , "Error: expected an expression or delimiter, got \"<EOF>\" at ")
       , ( "invalid expression ending"
-        , ["f(),", "name,", "4,", "4 + 5,", "(2 + 3),"]
-        , "Error: expected ExprEnd; got ValueDelim")
+        , [ ("f(),", "3:4")
+          , ("name,", "4:5")
+          , ("4,", "1:2")
+          , ("4 + 5,", "5:6")
+          , ("(2 + 3),", "7:8")
+          ]
+        , "Error: expected \"!\", got \",\" at ")
       , ( "valid expression end but invalid parameter list delimiter or close"
-        , ["f(1!", "f(1, 2!"]
-        , "Error: expected ValueDelim or RParen; got ExprEnd")
+        , [("f(1!", "3:4"), ("f(1, 2!", "6:7")]
+        , "Error: expected \",\" or \")\", got \"!\" at ")
       , ( "invalid expression end in parameter list"
-        , ["f(1]", "f(1, 2]"]
-        , "Error: expected Plus, Minus, Times, Div, Mod, RParen, ExprEnd, or ValueDelim; got RBracket")
+        , [("f(1]", "3:4"), ("f(1, 2]", "6:7")]
+        , "Error: expected an expression or delimiter, got \"]\" at ")
       , ( "missing expression and invalid list close in parameter list"
-        , ["f(]"]
-        , "Error: expected Plus, Minus, LParen, Number, Name, or StrBound; got RBracket")
+        , [("f(]", "2:3")]
+        , "Error: expected an expression, got \"]\" at ")
       , ( "invalid parantheses close"
-        , ["(1!", "(1 + 2!", "(3 % 2!)", "f((1!)", "((1 + 2!)"]
-        , "Error: expected RParen; got ExprEnd")
+        , [ ("(1!", "2:3")
+          , ("(1 + 2!", "6:7")
+          , ("(3 % 2!)", "6:7")
+          , ("f((1!)", "4:5")
+          , ("((1 + 2!)", "7:8")
+          ]
+        , "Error: expected \")\", got \"!\" at ")
       ] $ \(errorKind, cases, err) ->
-      forM_ cases $ \errCase ->
+      forM_ cases $ \(errCase, errSpan) ->
         it ("should reject " ++ errorKind ++ ": " ++ errCase) $
-        driveParser errCase `shouldBe` err
+        driveParser errCase `shouldBe` err ++ errSpan

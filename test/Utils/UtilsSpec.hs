@@ -22,12 +22,15 @@ spec = do
     it "returns true if all criteria match" $ do
       isAnyOf [(== 4), (even), (/= 99)] 4 `shouldBe` True
   describe "SplitWhen" $ do
+    let splitAtComma = splitWhen (== ',')
     it "splits a regular case correctly" $ do
       splitAtComma "a,b,see" `shouldBe` ["a", "b", "see"]
     it "splits and empty list correctly" $ do splitAtComma [] `shouldBe` [[]]
     it "splits correctly with adjacent delimiters" $ do
       splitAtComma "," `shouldBe` ["", ""]
       splitAtComma ",," `shouldBe` ["", "", ""]
-
-splitAtComma :: String -> [String]
-splitAtComma = splitWhen (== ',')
+  describe "Span" $ do
+    it "should show span" $ do show (Span 0 1) `shouldBe` "0:1"
+    it "should access span data members" $ do
+      let span = Span 0 1
+      (start span, end span) `shouldBe` (0, 1)
