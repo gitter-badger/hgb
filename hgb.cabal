@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bc147616d3308dcc9e86f001571c7fe78912495bd3a5effc84cb7b053970c1d6
+-- hash: ed613e02009c4fd05080977a08fb6f893703fa527cbfeb0f4f9ea6f40f371fa0
 
 name:           hgb
 version:        0.1.0.0
@@ -28,6 +28,7 @@ source-repository head
 library
   exposed-modules:
       Error
+      Eval
       Grammar
       Lexer
       Lib
@@ -62,6 +63,7 @@ test-suite hgb-test
   main-is: Spec.hs
   other-modules:
       Error.ErrorSpec
+      Eval.EvalSpec
       Grammar.GrammarSpec
       Lexer.LexerSpec
       Parser.ParserSpec
