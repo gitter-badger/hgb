@@ -23,7 +23,7 @@ lex' i all@(x:xs)
   | isSpace x = lex' (i + 1) xs
   | [x] == "\"" =
     let (tokens, afterTokens) = lexStr i all
-        endIndex = end $ sourceSpan ( last tokens )
+        endIndex = end $ sourceSpan (last tokens)
      in tokens ++ lex' endIndex afterTokens
   | otherwise =
     let (token, afterToken)
@@ -64,7 +64,7 @@ lexNumber i str = (Token Symbol.Number numStr (Span i end), afterNum)
         (digits, afterDigits) = span isDigit str
 
 lexAlphaKeyword :: Int -> String -> (Token, String)
-lexAlphaKeyword i str = (Token symbol keyword (Span i end ), afterKeyword)
+lexAlphaKeyword i str = (Token symbol keyword (Span i end), afterKeyword)
   where
     (keyword, afterKeyword) = span (isAnyOf [isAlphaNum, (== '_')]) str
     end = i + length keyword
@@ -98,7 +98,7 @@ lexAlphaKeyword i str = (Token symbol keyword (Span i end ), afterKeyword)
 type SymbolWithContent = (Symbol, String, String)
 
 lexOperatorOrPunctuation :: Int -> String -> (Token, String)
-lexOperatorOrPunctuation i str = (Token symbol tok (Span i end ), remainder)
+lexOperatorOrPunctuation i str = (Token symbol tok (Span i end), remainder)
   where
     (symbol, tok, remainder) = getSymbol "" str
     end = i + length tok
@@ -128,7 +128,7 @@ lexOperatorOrPunctuation i str = (Token symbol tok (Span i end ), remainder)
         "*" -> (Symbol.Times, tok, rest)
         "/" -> (Symbol.Div, tok, rest)
         "%" -> (Symbol.Mod, tok, rest)
-        "!" -> (Symbol.ExprEnd, tok, rest)
+        "!" -> (Symbol.LineDelim, tok, rest)
         _ -> (Symbol.Invalid, tok, rest)
       where
         tok = main ++ [next]

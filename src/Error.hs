@@ -4,6 +4,7 @@ module Error
   , Expectation(..)
   ) where
 
+import Prelude
 import Symbol (Symbol(..), symbolToStr)
 import Token (Token(..))
 import Utils (Span)
@@ -16,25 +17,26 @@ displayOptions all = concat all -- Option, AnotherOption, ..., or YetAnotherOpti
     concat :: Show a => [a] -> String
     concat lst =
       case lst
-      -- ..., AnotherOption, or YetAnotherOption
+        -- ..., AnotherOption, or YetAnotherOption
             of
         [slast, last] -> show slast ++ ", or " ++ show last
-      -- Option, ...
-        (first:rest) -> show first ++ ", " ++ concat rest
+        -- Option, ...
+        first:rest -> show first ++ ", " ++ concat rest
 
 data Expectation
   = Expression
-  | ExpressionTerminator
-  | ExpressionOrDelimiter
-  | EnumerationListDelimiter [Symbol]
-  | CloseToken Symbol
+  | Operator
+  | Symbol Symbol
+  | Assignment
+  | Options [Expectation]
 
 instance Show Expectation where
   show Expression = "an expression"
-  show ExpressionTerminator = show (symbolToStr Symbol.ExprEnd)
-  show ExpressionOrDelimiter = show Expression ++ " or delimiter"
-  show (EnumerationListDelimiter options) = displayOptions (map symbolToStr options)
-  show (CloseToken closer) = show (symbolToStr closer)
+  show Operator = "an operator"
+  show (Symbol Name) = "a name"
+  show (Symbol sym) = show $ symbolToStr sym
+  show Assignment = "an assignment"
+  show (Options expectations) = displayOptions expectations
 
 data ErrorType =
   Expected Expectation Token

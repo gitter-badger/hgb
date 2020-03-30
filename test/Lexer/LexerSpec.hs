@@ -101,7 +101,7 @@ spec = do
           , ("*", Symbol.Times)
           , ("/", Symbol.Div)
           , ("%", Symbol.Mod)
-          , ("!", Symbol.ExprEnd)
+          , ("!", Symbol.LineDelim)
           , ("in", Symbol.In)
           , ("and", Symbol.And)
           , ("not", Symbol.Not)
@@ -146,7 +146,7 @@ spec = do
     it "does not lex combinations as invalid" $ do
       driveLexer "=/=!:" `shouldBe`
         [ (Token Symbol.NEq "=/=" (Span 0 3))
-        , (Token Symbol.ExprEnd "!" (Span 3 4))
+        , (Token Symbol.LineDelim "!" (Span 3 4))
         , (Token Symbol.TypeDelim ":" (Span 4 5))
         ]
   describe "lexAlphaKeyword" $ do
