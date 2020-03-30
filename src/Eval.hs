@@ -4,6 +4,8 @@ import Grammar
 
 evalInt :: Expression -> Int
 evalInt (Number n) = n
+evalInt (Call "+" [x]) = evaInt x
+evalInt (Call "-" [x]) = - evalInt x
 evalInt (Call function args) =
   case function of
     "+" -> a + b
