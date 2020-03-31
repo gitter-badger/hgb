@@ -4,8 +4,8 @@ import Grammar
 
 evalInt :: Expression -> Int
 evalInt (Number n) = n
-evalInt (Call "+" [x]) = evaInt x
-evalInt (Call "-" [x]) = - evalInt x
+evalInt (Call "+" [x]) = evalInt x
+evalInt (Call "-" [x]) = -evalInt x
 evalInt (Call function args) =
   case function of
     "+" -> a + b
@@ -13,4 +13,5 @@ evalInt (Call function args) =
     "*" -> a * b
     "/" -> a `div` b
     "%" -> a `mod` b
-  where [a, b] = map evalInt args
+  where
+    [a, b] = map evalInt args
