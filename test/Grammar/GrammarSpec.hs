@@ -41,7 +41,7 @@ baseExpressions =
   , (Reference "data", "$data")
   , (Call "func" [], "(func )")
   ] ++
-  concat (map nestType types)
+  concatMap nestType types
 
 nestExpression :: (Expression, String) -> [(Expression, String)]
 nestExpression (expr, exprStr) =
@@ -52,7 +52,7 @@ nestExpression (expr, exprStr) =
   ]
 
 baseAndNestedExpressions =
-  baseExpressions ++ concat (map nestExpression baseExpressions)
+  baseExpressions ++ concatMap nestExpression baseExpressions
 
 spec :: Spec
 spec = do

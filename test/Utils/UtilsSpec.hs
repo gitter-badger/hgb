@@ -17,12 +17,12 @@ spec = do
     it "returns false if the first argument is an empty list" $ do
       isAnyOf [] 8 `shouldBe` False
       isAnyOf [] "a" `shouldBe` False
-    it "returns true if only one of the criteria matches" $ do
+    it "returns true if only one of the criteria matches" $
       isAnyOf [(== 2), (== 4)] 4 `shouldBe` True
-    it "returns true if all criteria match" $ do
-      isAnyOf [(== 4), (even), (/= 99)] 4 `shouldBe` True
+    it "returns true if all criteria match" $
+      isAnyOf [(== 4), even, (/= 99)] 4 `shouldBe` True
   describe "Span" $ do
-    it "should show span" $ do show (Span 0 1) `shouldBe` "0:1"
+    it "should show span" $ show (Span 0 1) `shouldBe` "0:1"
     it "should access span data members" $ do
       let span = Span 0 1
       (start span, end span) `shouldBe` (0, 1)

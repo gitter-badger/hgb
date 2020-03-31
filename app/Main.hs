@@ -11,3 +11,4 @@ main = do
     if args == ["--lex"]
         then print lexed
         else print $ LibHgb.parse lexed
+

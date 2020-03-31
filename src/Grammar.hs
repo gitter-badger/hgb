@@ -52,8 +52,10 @@ instance Read Type where
       readType "double" = Double
       readType "int" = Int Nothing True
       readType "uint" = Int Nothing False
-      readType ('i':'n':'t':maybeBits) = Int (readMaybe maybeBits :: Maybe Bits) True
-      readType ('u':'i':'n':'t':maybeBits) = Int (readMaybe maybeBits :: Maybe Bits) False
+      readType ('i':'n':'t':maybeBits) =
+        Int (readMaybe maybeBits :: Maybe Bits) True
+      readType ('u':'i':'n':'t':maybeBits) =
+        Int (readMaybe maybeBits :: Maybe Bits) False
 
 data Expression
   = Number Int
