@@ -1,5 +1,7 @@
 module Lib
-  ( module Lexer
+  ( module Lexer,
+    module Parser
   ) where
 
 import Lexer
+import Parser
