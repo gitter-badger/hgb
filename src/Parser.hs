@@ -4,9 +4,9 @@ module Parser
   ( parse
   ) where
 
-import Debug.Trace
+import Data.Maybe
 import Error (Error(..), ErrorType(..), Expectation(..))
-import Grammar (Expression)
+import Grammar (Expression, Type)
 import qualified Grammar
 import Symbol (Symbol(..))
 import qualified Symbol
@@ -16,7 +16,6 @@ import Utils
 infixOperatorPrecidence :: Symbol -> Int
 infixOperatorPrecidence op =
   case op of
-    Symbol.RParen -> -1
     Symbol.Minus -> 1
     Symbol.Plus -> 1
     Symbol.Div -> 2
@@ -24,49 +23,104 @@ infixOperatorPrecidence op =
     Symbol.Mod -> 2
 
 closingDelim :: Symbol -> Symbol
-closingDelim s =
-  case s of
-    Symbol.LParen -> Symbol.RParen
+closingDelim Symbol.LParen = Symbol.RParen
 
 wrapExpectation :: Expectation -> Token -> Either Error any
 wrapExpectation expectation gotTok =
   Left $ Error (Expected expectation gotTok) (sourceSpan gotTok)
 
+type Delim = Symbol
+
+type Terminator = Symbol
+
+type ExpressionParser = ([Token] -> Either Error (Expression, [Token]))
+
+type MultiExpressionParser = ([Token] -> Either Error ([Expression], [Token]))
+
 -- This parsing module uses [Top-Down Operator Precedence] parsing (also known as a [Pratt Parsing]
 -- technique).  The basic idea is this:
 --
 -- 1. First, parse prefix operators. These are operators that do not rely on previous parsing
---    contexts. Prefix operators include +/- signs, function calls, and parenthetical expressions. 
+--    contexts. Prefix operators include +/- signs, function calls, and parenthetical expressions.
 --
 -- 2. Next, parse infix operators. These are operators that *do* rely on previous parsing contexts.
 --    Infix operators include the + and - functions.
--- 
+--
 -- [Top-Down Operator Precedence]: https://tdop.github.io/
 -- [Pratt Parsing]: https://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
 parse :: [Token] -> Either Error [Expression]
-parse [Token Symbol.EndOfFile _ _] = Right []
-parse tokens = do
-  (expression, afterExpression) <- parseExpression 0 tokens -- parse first expression
-  -- Now, parse the rest
-  let (tok:rest) = afterExpression
-  let sym = symbol tok
-  if sym == Symbol.ExprEnd
-    then (expression :) <$> parse rest
-    else wrapExpectation ExpressionTerminator tok
+-- Parses a program by parsing multiple lines of expressions until EOF is hit.
+parse tokens = fst <$> parseLines Symbol.EndOfFile tokens
 
-parseExpression :: Int -> [Token] -> Either Error (Expression, [Token])
-parseExpression precedence tokens = do
-  (left, afterLeft) <- parsePrefix tokens
-  parseInfix precedence left afterLeft
+parseLines :: Terminator -> MultiExpressionParser
+-- Parses multiple lines in program unitl some terminator is hit.
+parseLines = parseMultiple (parseExpr 0 [Symbol.LineDelim])
 
+parseMultiple :: ExpressionParser -> Terminator -> MultiExpressionParser
+-- Parses multiple lines using an ExpressionParser some terminator is hit.
+parseMultiple expressionParser terminator = parseMultiple'
+  where
+    parseMultiple' :: [Token] -> Either Error ([Expression], [Token])
+    parseMultiple' tokens
+      | symbol (head tokens) == terminator = Right ([], tokens)
+      | otherwise = do
+        (expr, afterExpr) <- expressionParser tokens
+        -- An ExpressionParser should stop parsing right before a delimiter.
+        let (delim:afterDelim) = afterExpr
+        (otherExprs, beyond) <- parseMultiple' afterDelim
+        return (expr : otherExprs, beyond)
+
+parseExpr :: Int -> [Delim] -> ExpressionParser
+parseExpr precedence delims tokens =
+  if symbol (head tokens) == Symbol.Func
+    then parseFunctionDeclaration $ tail tokens
+    else do
+      (left, afterLeft) <- parsePrefix delims tokens
+      parseInfix precedence delims left afterLeft
+
+parseFunctionDeclaration :: ExpressionParser
+parseFunctionDeclaration tokens = do
+  tokens <- expectedStart `assertMatches` tokens
+  let nameTok:lParen:paramsAndBeyond = tokens
+  (params, afterParams) <- parseDeclarations paramsAndBeyond
+  tokens <- expectedMid `assertMatches` afterParams
+  let typeDelim:typeToken:lBrace:exprsAndBeyond = afterParams
+  (exprs, beyondFunctionDeclaration) <- parseLines Symbol.RBrace exprsAndBeyond
+  let name = content nameTok
+  let functionType = read $ content typeToken
+  if null exprs
+    then wrapExpectation Expression $ head exprsAndBeyond
+    else return
+           ( Grammar.FunctionDeclaration name params functionType exprs
+           , beyondFunctionDeclaration)
+  where
+    expectedStart = [Symbol.Name, Symbol.LParen]
+    expectedMid = [Symbol.TypeDelim, Symbol.Type, Symbol.LBrace]
+    parseDeclarations =
+      parseEnumeration parseDeclare Symbol.ValueDelim Symbol.LParen
+    assertMatches :: [Symbol] -> [Token] -> Either Error [Token]
+    assertMatches symbols tokens =
+      case returnConflict symbols tokens of
+        Nothing -> Right tokens
+        Just (expectedSymbol, actualToken) ->
+          wrapExpectation (Symbol expectedSymbol) actualToken
+    returnConflict :: [Symbol] -> [Token] -> Maybe (Symbol, Token)
+    -- Check whether a list of matches a list of symbols at its start.
+    -- If not, return a tuple of tokens that don't match the symbol.
+    returnConflict [] _ = Nothing
+    returnConflict (x:xs) (y:ys)
+      | x == symbol y = returnConflict xs ys
+      | otherwise = Just (x, y)
+
+parsePrefix :: [Delim] -> ExpressionParser
 -- Parse expressions that do not depend on previous parsing contexts.
-parsePrefix :: [Token] -> Either Error (Expression, [Token])
-parsePrefix tokens@(tok:_)
-  | sym `elem` prefixOperators = parsePrefixCall tokens
+parsePrefix delims tokens@(tok:_)
+  | sym `elem` prefixOperators = parsePrefixCall delims tokens
   | sym == Symbol.LParen = parseParen tokens
   | sym == Symbol.Number = parseNumber tokens
-  | sym == Symbol.Name = parseName tokens
+  | sym == Symbol.Name = parseName delims tokens
   | sym == Symbol.StrBound = parseString tokens
+  | sym == Symbol.Return = parseReturn tokens
   | otherwise = wrapExpectation Expression tok
   where
     prefixOperators = [Symbol.Plus, Symbol.Minus]
@@ -121,116 +175,132 @@ parsePrefix tokens@(tok:_)
 --
 -- This strategy enables "nesting" higher-precedence expressions in lower-precendence expressions,
 -- preserving an order of operations.
-parseInfix :: Int -> Expression -> [Token] -> Either Error (Expression, [Token])
-parseInfix precedence left tokens@(operatorTok:afterOperator)
-  | operatorSym `elem` expressionTerminators = Right (left, tokens)
-  | operatorSym `elem` infixOperators =
-    if newPrecidence <= precedence
-      then Right (left, tokens)
-      else do
-        (right, afterExpression) <- parseExpression newPrecidence afterOperator
-        let expression = Grammar.Call operatorStr [left, right]
-        parseInfix precedence expression afterExpression
-  | otherwise = wrapExpectation ExpressionOrDelimiter operatorTok
+parseInfix :: Int -> [Delim] -> Expression -> ExpressionParser
+parseInfix precedence delims = parseInfix'
   where
-    expressionTerminators = [Symbol.ExprEnd, Symbol.ValueDelim]
-    infixOperators =
-      [ Symbol.Plus
-      , Symbol.Minus
-      , Symbol.Times
-      , Symbol.Div
-      , Symbol.Mod
-      , Symbol.RParen
-      ]
-    operatorSym = symbol operatorTok
-    newPrecidence = infixOperatorPrecidence operatorSym
-    operatorStr = content operatorTok
+    parseInfix' left tokens@(operatorTok:afterOperator)
+      | operatorSym `elem` delims = Right (left, tokens)
+      | operatorSym `elem` infixOperators =
+        if newPrecidence <= precedence
+          then Right (left, tokens)
+          else do
+            (right, afterExpr) <- parseExpr newPrecidence delims afterOperator
+            let expr = Grammar.Call operatorStr [left, right]
+            parseInfix' expr afterExpr
+      | otherwise =
+        wrapExpectation (Options $ Operator : map Symbol delims) operatorTok
+      where
+        infixOperators =
+          [Symbol.Plus, Symbol.Minus, Symbol.Times, Symbol.Div, Symbol.Mod]
+        operatorSym = symbol operatorTok
+        newPrecidence = infixOperatorPrecidence operatorSym
+        operatorStr = content operatorTok
 
-parseNumber :: [Token] -> Either Error (Expression, [Token])
+parseNumber :: ExpressionParser
 parseNumber (tok:rest) = Right (Grammar.Number value, rest)
   where
     value = read (content tok) :: Int
 
-parseName :: [Token] -> Either Error (Expression, [Token])
-parseName all@(name:listOpen@(Token Symbol.LParen _ _):parameterList) =
-  parseCall name listOpen parameterList
-parseName tokens = parseVariable tokens
+parseName :: [Delim] -> ExpressionParser
+parseName delims tokens@(nameTok:next:beyond) =
+  case symbol next of
+    Symbol.LParen -> parseCall tokens
+    Symbol.TypeDelim -> parseDeclare delims tokens
+    Symbol.Assign -> parseAssign delims tokens
+    _ -> parseReference tokens
 
-parseCall :: Token -> Token -> [Token] -> Either Error (Expression, [Token])
-parseCall name listOpen parameterListAndBeyond
-  -- Parses a call expression of the form
-  --   (data, "value")!
-  --   ^                 | list open
-  --    ^^^^^^^^^^^^^^^  | parameter list and beyond
- = do
-  (arguments, afterArguments) <-
-    parseEnumeration listOpen parameterListAndBeyond
-  return (Grammar.Call (content name) arguments, afterArguments)
-
-parseEnumeration :: Token -> [Token] -> Either Error ([Expression], [Token])
-parseEnumeration
-  -- Parses an enumerated list
-  --   (data, "value")!
-  --   ^                 | list open
-  --                 ^   | list close
-  --    ^^^^^^^^^^^^^^^  | enumerated list and beyond
- listOpen enumerationAndBeyond@(firstToken:everythingElse)
-  | symbol firstToken == listClose = Right ([], everythingElse)
-  | otherwise = parseEnumeration' enumerationAndBeyond
+parseCall :: ExpressionParser
+-- Parses a call expression of the form
+--   foo(data, "value")!
+--   ^^^                  | name
+--      ^                 | lParen
+--       ^^^^^^^^^^^^^^^  | afterLParen
+parseCall (nameTok:lParen:afterLParen) = do
+  (arguments, afterArguments) <- parseEnumeration' Symbol.LParen afterLParen
+  return (Grammar.Call name arguments, afterArguments)
   where
-    listClose = closingDelim $ symbol listOpen
+    name = content nameTok
+    parseFunction = parseExpr 0
+    parseEnumeration' = parseEnumeration parseFunction Symbol.ValueDelim
+
+parseDeclare :: [Delim] -> ExpressionParser
+parseDeclare delims (nameTok:typeDelim:Token Symbol.Type typeStr _:next:beyond)
+  | nextSym == Symbol.Assign = do
+    (declaration, afterDeclaration) <- parseExpr 0 delims beyond
+    return
+      (Grammar.Declaration name varType (Just declaration), afterDeclaration)
+  | nextSym `elem` delims =
+    Right (Grammar.Declaration name varType Nothing, next : beyond)
+  | otherwise = wrapExpectation (Options $ Assignment : map Symbol delims) next
+  where
+    nextSym = symbol next
+    varType = read typeStr
+    name = content nameTok
+parseDeclare _ (nameTok:typeDelim:wrongToken:after) =
+  wrapExpectation (Symbol Symbol.Type) wrongToken
+
+parseAssign :: [Delim] -> ExpressionParser
+parseAssign delims (nameTok:assign:afterAssign) = do
+  (assignedVal, afterVal) <- parseExpr 0 delims afterAssign
+  return (Grammar.Assignment (content nameTok) assignedVal, afterVal)
+
+parseEnumeration ::
+     ([Delim] -> ExpressionParser)
+  -> Delim
+  -> Terminator
+  -> MultiExpressionParser
+-- Parses an enumerated list
+--   (data, "value")!
+--   ^                 | list open
+--                 ^   | list close
+--    ^^^^^^^^^^^^^^^  | afterOpen
+-- The difference between parseEnumeration and parseMultiple is that parseEnum
+-- does not require an enumerator at the end of the last expression whereas
+-- parseMultiple does. For example
+--     parseEnumeration parseExpr Symbol.ValueDelim Symbol.LParen
+-- would parse enumerations like "(a, b, c)", whereas
+--     parseMultiple (parseExpr 0 Symbol.ValueDelim) Symbol.LParen
+--  would parse things like "(a, b, c, )" -- notice the trailing comma.
+parseEnumeration vagueExpressionParser delim listOpen afterOpen
+  | symbol (head afterOpen) == listClose = Right ([], tail afterOpen)
+  | otherwise = parseEnumeration' afterOpen
+  where
+    listClose = closingDelim listOpen
+    parseFunction = vagueExpressionParser [delim, listClose]
     parseEnumeration' :: [Token] -> Either Error ([Expression], [Token])
-    parseEnumeration' params = do
-      (item, afterItem) <- parseExpression 0 params -- parse the first enumerated item
-      -- Parse tokens after the enumerated item. There are three cases here:
-      --   1. the item is followed by a item delimiter
-      --   2. the item is followed by a list close
-      --   3. neither (1) nor (2), which means the program is invalid
+    -- Parse tokens after the enumerated item. There are two cases here:
+    --   1. the item is followed by a item delim
+    --   2. the item is followed by a list close
+    parseEnumeration' tokens = do
+      (item, afterItem) <- parseFunction tokens
       let (itemClose:restOfListAndBeyond) = afterItem
       let sym = symbol itemClose
-      if | sym == Symbol.ValueDelim
-          -- 1. The item is followed by a delimiter
-          --    item1, item2, item3)!
-          --         ^                 | item close
-          --           ^^^^^^^^^^^^^^  | rest of list and beyond
-          --    In this case, parse the rest of the enumerated items and append them to the first.
-          ->
+      if | sym == Symbol.ValueDelim ->
            do (otherItems, beyondList) <- parseEnumeration' restOfListAndBeyond
               return (item : otherItems, beyondList)
-         | sym == listClose
-          -- 2. The item is followed by a list close
-          --    item)!
-          --        ^  | list close
-          --         ^ | rest of list and beyond
-          --    In this case, just return the one item.
-          -> return ([item], restOfListAndBeyond)
-         | otherwise
-          -- 3. Otherwise, the token is invalid.
-          ->
-           wrapExpectation
-             (EnumerationListDelimiter [Symbol.ValueDelim, listClose])
-             itemClose
+         | sym == listClose -> return ([item], restOfListAndBeyond)
 
-parseVariable :: [Token] -> Either Error (Expression, [Token])
-parseVariable (tok:rest) = Right (Grammar.Variable $ content tok, rest)
-
-parseParen :: [Token] -> Either Error (Expression, [Token])
-parseParen (parenToken:afterParen) = do
-  (expression, afterExpression) <- parseExpression 0 afterParen
-  let (tok:rest) = afterExpression
-  let sym = symbol tok
-  let closer = closingDelim $ symbol parenToken
-  if sym == closer
-    then return (expression, rest)
-    else wrapExpectation (CloseToken closer) tok
-
-parsePrefixCall :: [Token] -> Either Error (Expression, [Token])
-parsePrefixCall (tok:rest) = do
-  (expression, afterExpression) <- parsePrefix rest
-  return (Grammar.Call operatorStr [expression], afterExpression)
+parseReference :: ExpressionParser
+parseReference (nameTok:rest) = Right (Grammar.Reference name, rest)
   where
-    operatorStr = content tok
+    name = content nameTok
 
-parseString :: [Token] -> Either Error (Expression, [Token])
+parseParen :: ExpressionParser
+parseParen (parenToken:afterParen) = do
+  (expr, afterExpr) <- parseExpr 0 [Symbol.RParen] afterParen
+  let closer:rest = afterExpr
+  return (expr, rest)
+
+parsePrefixCall :: [Delim] -> ExpressionParser
+parsePrefixCall delims (tok:rest) = do
+  (expr, afterExpr) <- parsePrefix delims rest
+  return (Grammar.Call (content tok) [expr], afterExpr)
+
+parseString :: ExpressionParser
 parseString (_:contentToken:_:afterString) =
   Right (Grammar.String (content contentToken), afterString)
+
+parseReturn :: ExpressionParser
+parseReturn (returnTok:afterKeyword) = do
+  (expr, afterExpr) <- parseExpr 0 [Symbol.LineDelim] afterKeyword
+  return (Grammar.Return expr, afterExpr)

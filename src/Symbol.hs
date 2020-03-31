@@ -30,7 +30,7 @@ data Symbol
   | Div
   | Mod
   | StrBound
-  | ExprEnd
+  | LineDelim
   | In
   | And
   | Not
@@ -53,6 +53,8 @@ data Symbol
   deriving (Eq, Show)
 
 symbolToStr :: Symbol -> String
-symbolToStr ExprEnd = "!"
+symbolToStr LineDelim = "!"
 symbolToStr RParen = ")"
 symbolToStr ValueDelim = ","
+symbolToStr TypeDelim = ":"
+symbolToStr s = "<" ++ show s ++ ">" -- e.g. <Type>

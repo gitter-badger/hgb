@@ -34,7 +34,7 @@ spec =
     , (Symbol.Times, "Times")
     , (Symbol.Div, "Div")
     , (Symbol.Mod, "Mod")
-    , (Symbol.ExprEnd, "ExprEnd")
+    , (Symbol.LineDelim, "LineDelim")
     , (Symbol.In, "In")
     , (Symbol.And, "And")
     , (Symbol.Not, "Not")
