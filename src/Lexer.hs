@@ -11,6 +11,8 @@ import qualified Symbol (Symbol(..))
 import Token (Token(..))
 import Utils
 
+backslash = '\\'
+
 endOfFileToken :: Int -> Token
 endOfFileToken i = Token Symbol.EndOfFile "<EOF>" (Span i i)
 
@@ -33,19 +35,41 @@ lex' i all@(x:xs)
      in token : lex' (end $ sourceSpan token) afterToken
 
 lexStr :: Int -> String -> ([Token], String)
-lexStr i (delim:afterOpener) =
+lexStr strStart (delim:afterStrOpen) =
   case afterContent of
+    [] -> ([strOpenToken, contentToken], afterContent)
     (_:afterCloser) ->
-      ([openingDelimToken, contentToken, closingDelimToken], afterCloser)
-    _ -> ([openingDelimToken, contentToken], afterContent)
+      ([strOpenToken, contentToken, strCloseToken], afterCloser)
   where
-    (contentStr, afterContent) = break (== delim) afterOpener
-    contentStart = i + 1
-    contentEnd = contentStart + length contentStr
-    openingDelimToken = Token Symbol.StrBound [delim] (Span i contentStart)
-    contentToken = Token Symbol.String contentStr (Span contentStart contentEnd)
-    closingDelimToken =
+    contentStart = strStart + 1
+    (contentEnd, content, afterContent) = lexStr' contentStart afterStrOpen
+    contentToken = Token Symbol.String content (Span contentStart contentEnd)
+    strOpenToken = Token Symbol.StrBound [delim] (Span strStart contentStart)
+    strCloseToken =
       Token Symbol.StrBound [delim] (Span contentEnd (contentEnd + 1))
+    lexStr' :: Int -> String -> (Int, String, String)
+    lexStr' i [] = (i, [], [])
+    lexStr' i xs@(ch:xs')
+      | ch == delim = (i, [], xs)
+      | ch == backslash =
+        let (escChar, rest) = lexEscapeSequence xs'
+            (end, moreContent, afterContent) = lexStr' (i + 1) rest
+         in (end, escChar : moreContent, afterContent)
+      | otherwise =
+        let (end, moreContent, afterContent) = lexStr' (i + 1) xs'
+         in (end, ch : moreContent, afterContent)
+
+lexEscapeSequence :: String -> (Char, String)
+-- There is nothing in the escape sequence, so just return the escape character.
+-- TODO: this should actually be a lexing error.
+lexEscapeSequence [] = (backslash, "")
+lexEscapeSequence (c:rest) = (content, rest)
+  where
+    content =
+      case c of
+        'n' -> '\n'
+        't' -> '\t'
+        other -> other
 
 lexNumber :: Int -> String -> (Token, String)
 lexNumber i str = (Token Symbol.Number numStr (Span i end), afterNum)

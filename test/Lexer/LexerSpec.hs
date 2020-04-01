@@ -27,6 +27,36 @@ spec = do
       , Token Symbol.String "str" (Span 1 4)
       , Token Symbol.StrBound "\"" (Span 4 5)
       ]
+    describe "escape characters" $ do
+      it "should work for string delims" $
+        driveLexer "\"\\\"\"" `shouldBe`
+        [ Token Symbol.StrBound "\"" (Span 0 1)
+        , Token Symbol.String "\"" (Span 1 2)
+        , Token Symbol.StrBound "\"" (Span 2 3)
+        ]
+      it "should work for newlines" $
+        driveLexer "\"\\n\"" `shouldBe`
+        [ Token Symbol.StrBound "\"" (Span 0 1)
+        , Token Symbol.String "\n" (Span 1 2)
+        , Token Symbol.StrBound "\"" (Span 2 3)
+        ]
+      it "should work for tabs" $
+        driveLexer "\"\\t\"" `shouldBe`
+        [ Token Symbol.StrBound "\"" (Span 0 1)
+        , Token Symbol.String "\t" (Span 1 2)
+        , Token Symbol.StrBound "\"" (Span 2 3)
+        ]
+      it "should not escape regular characters" $
+        driveLexer "\"\\t\"" `shouldBe`
+        [ Token Symbol.StrBound "\"" (Span 0 1)
+        , Token Symbol.String "\t" (Span 1 2)
+        , Token Symbol.StrBound "\"" (Span 2 3)
+        ]
+      it "should not escape an empty escape sequence" $
+        driveLexer "\"\\" `shouldBe`
+        [ Token Symbol.StrBound "\"" (Span 0 1)
+        , Token Symbol.String "\\" (Span 1 2)
+        ]
     it "handles missing content" $
       driveLexer "\"\"" `shouldBe`
       [ Token Symbol.StrBound "\"" (Span 0 1)
