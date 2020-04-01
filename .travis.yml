@@ -22,9 +22,11 @@ install:
   - stack -j4 build --no-terminal --only-snapshot
   - stack -j4 build --no-terminal --test --no-run-tests --coverage
   - stack -j4 test --no-terminal --install-ghc --only-dependencies
+  - stack install hindent
+  - stack install hlint
 
 script:
-  - stack -j4 test --coverage --no-terminal
+  - ./scripts/all.sh
 
 after_script:
   - travis_retry curl -L https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.4.0/shc-linux-x64-8.0.1.tar.bz2 | tar -xj

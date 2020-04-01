@@ -70,8 +70,10 @@ spec = do
       it "should parse negative calls" $ driveParser "-2!" `shouldBe` "(- 2)"
       it "should parse chained infix calls" $
         driveParser "-+-2!" `shouldBe` "(- (+ (- 2)))"
-      it "should parse prefix calls with variables" $ driveParser "+name!" `shouldBe` "(+ $name)"
-      it "should parse prefix calls with declarations" $ driveParser "+a : int = 1!" `shouldBe` "(+ (declare ($a : int) 1))"
+      it "should parse prefix calls with variables" $
+        driveParser "+name!" `shouldBe` "(+ $name)"
+      it "should parse prefix calls with declarations" $
+        driveParser "+a : int = 1!" `shouldBe` "(+ (declare ($a : int) 1))"
     describe "infix calls" $
       forM_
         [ ("addition", "5 + 2!", "(+ 5 2)")

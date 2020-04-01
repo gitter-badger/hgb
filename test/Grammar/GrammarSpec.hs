@@ -29,19 +29,19 @@ types =
 nestType :: (Type, String) -> [(Expression, String)]
 nestType (ty, tyStr) =
   [ (Declaration "var" ty Nothing, "(declare ($var : " ++ tyStr ++ "))")
-  , ( Declaration "var" ty (Just $ Number 1)
+  , ( Declaration "var" ty (Just $ Number "1")
     , "(declare ($var : " ++ tyStr ++ ") 1)")
   , ( FunctionDeclaration "func" [] ty []
     , "(fun (func () : " ++ tyStr ++ ") ())")
   ]
 
 baseExpressions =
-  [ (Number 5, "5")
+  [ (Number "5", "5")
   , (String "str", "\"str\"")
   , (Reference "data", "$data")
   , (Call "func" [], "(func )")
   ] ++
-  concat (map nestType types)
+  concatMap nestType types
 
 nestExpression :: (Expression, String) -> [(Expression, String)]
 nestExpression (expr, exprStr) =
@@ -52,7 +52,7 @@ nestExpression (expr, exprStr) =
   ]
 
 baseAndNestedExpressions =
-  baseExpressions ++ concat (map nestExpression baseExpressions)
+  baseExpressions ++ concatMap nestExpression baseExpressions
 
 spec :: Spec
 spec = do
@@ -68,21 +68,21 @@ spec = do
     forM_ baseAndNestedExpressions $ \(sym, str) ->
       it ("should show expression: " ++ str) $ show sym `shouldBe` str
     it "should access call fields" $ do
-      let op = Call "func" [Number 0, Reference "str", String "str"]
+      let op = Call "func" [Number "0", Reference "str", String "str"]
       (name op, arguments op) `shouldBe`
-        ("func", [Number 0, Reference "str", String "str"])
+        ("func", [Number "0", Reference "str", String "str"])
     it "should access declaration fields" $ do
       let d = Declaration "a" (Int Nothing True) Nothing
       name d `shouldBe` "a"
       ty d `shouldBe` Int Nothing True
       maybeAssignment d `shouldBe` Nothing
     it "should access assignment fields" $ do
-      let a = Assignment "a" $ Number 5
+      let a = Assignment "a" $ Number "5"
       name a `shouldBe` "a"
-      assignment a `shouldBe` Number 5
+      assignment a `shouldBe` Number "5"
     it "should access function declaration Fields" $ do
-      let f = FunctionDeclaration "foo" [] Void [Return $ Number 1]
+      let f = FunctionDeclaration "foo" [] Void [Return $ Number "1"]
       name f `shouldBe` "foo"
       params f `shouldBe` []
       ty f `shouldBe` Void
-      exprs f `shouldBe` [Return $ Number 1]
+      exprs f `shouldBe` [Return $ Number "1"]
