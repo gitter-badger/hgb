@@ -197,9 +197,7 @@ parseInfix precedence delims = parseInfix'
         operatorStr = content operatorTok
 
 parseNumber :: ExpressionParser
-parseNumber (tok:rest) = Right (Grammar.Number value, rest)
-  where
-    value = read (content tok) :: Int
+parseNumber (tok:rest) = Right (Grammar.Number $ content tok, rest)
 
 parseName :: [Delim] -> ExpressionParser
 parseName delims tokens@(nameTok:next:beyond) =

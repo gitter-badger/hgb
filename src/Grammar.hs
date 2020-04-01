@@ -58,7 +58,7 @@ instance Read Type where
         Int (readMaybe maybeBits :: Maybe Bits) False
 
 data Expression
-  = Number Int
+  = Number String
   | String String
   | Reference String
   | Declaration
@@ -96,7 +96,7 @@ displayList :: Show a => [a] -> String
 displayList = unwords . map show
 
 instance Show Expression where
-  show (Number n) = show n
+  show (Number n) = n
   show (String s) = show s
   show (Reference v) = "$" ++ v
   show (Call name arguments) =
