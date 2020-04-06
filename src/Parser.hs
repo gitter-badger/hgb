@@ -29,6 +29,11 @@ wrapExpectation :: Expectation -> Token -> Either Error any
 wrapExpectation expectation gotTok =
   Left $ Error (Expected expectation gotTok) (sourceSpan gotTok)
 
+wrapError :: ErrorType -> (Token, Token) -> Either Error any
+wrapError errorTy (startTok, endTok) =
+  Left $
+  Error errorTy (Span (start $ sourceSpan startTok) (end $ sourceSpan endTok))
+
 type Delim = Symbol
 
 type Terminator = Symbol
@@ -120,6 +125,7 @@ parsePrefix delims tokens@(tok:_)
   | sym == Symbol.Number = parseNumber tokens
   | sym == Symbol.Name = parseName delims tokens
   | sym == Symbol.StrBound = parseString tokens
+  | sym == Symbol.CharBound = parseChar tokens
   | sym == Symbol.Return = parseReturn tokens
   | otherwise = wrapExpectation Expression tok
   where
@@ -295,8 +301,21 @@ parsePrefixCall delims (tok:rest) = do
   return (Grammar.Call (content tok) [expr], afterExpr)
 
 parseString :: ExpressionParser
-parseString (_:contentToken:_:afterString) =
-  Right (Grammar.String (content contentToken), afterString)
+parseString (opener:contentToken:closer:afterString) =
+  case symbol closer of
+    Symbol.StrBound ->
+      Right (Grammar.String (content contentToken), afterString)
+    _ -> wrapError (UnterminatedLiteral Symbol.String) (opener, contentToken)
+
+parseChar :: ExpressionParser
+parseChar (opener:contentToken:closer:afterChar) =
+  case symbol closer of
+    Symbol.CharBound ->
+      case symbol contentToken of
+        Symbol.Char ->
+          Right (Grammar.Char (head $ content contentToken), afterChar)
+        _ -> wrapError CharLiteralMustContainOneCodepoint (opener, closer)
+    _ -> wrapError (UnterminatedLiteral Symbol.Char) (opener, contentToken)
 
 parseReturn :: ExpressionParser
 parseReturn (returnTok:afterKeyword) = do

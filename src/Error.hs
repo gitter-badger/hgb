@@ -38,12 +38,22 @@ instance Show Expectation where
   show Assignment = "an assignment"
   show (Options expectations) = displayOptions expectations
 
-data ErrorType =
-  Expected Expectation Token
+data ErrorType
+  = Expected Expectation Token
+  | UnterminatedLiteral Symbol
+  | CharLiteralMustContainOneCodepoint
 
 instance Show ErrorType where
   show (Expected expectation token) =
     "expected " ++ show expectation ++ ", got " ++ show (content token)
+  show (UnterminatedLiteral kind) = do
+    let kindStr =
+          case kind of
+            Symbol.String -> "string"
+            Symbol.Char -> "char"
+    "unterminated " ++ kindStr ++ " literal"
+  show CharLiteralMustContainOneCodepoint =
+    "character literal must contain exactly one codepoint"
 
 data Error =
   Error ErrorType Span

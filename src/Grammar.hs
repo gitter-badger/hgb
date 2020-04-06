@@ -60,6 +60,7 @@ instance Read Type where
 data Expression
   = Number String
   | String String
+  | Char Char
   | Reference String
   | Declaration
       -- TODO: `name` should be a `Reference`.
@@ -98,6 +99,7 @@ displayList = unwords . map show
 instance Show Expression where
   show (Number n) = n
   show (String s) = show s
+  show (Char c) = show c
   show (Reference v) = "$" ++ v
   show (Call name arguments) =
     "(" ++ name ++ " " ++ displayList arguments ++ ")"

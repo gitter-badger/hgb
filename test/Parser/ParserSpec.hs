@@ -21,6 +21,8 @@ spec = do
     it "should parse numbers" $ driveParser "3!" `shouldBe` "3"
   describe "strings" $
     it "should parse strings" $ driveParser "\"foo\"!" `shouldBe` "\"foo\""
+  describe "chars" $
+    it "should parse chars" $ driveParser "'\\t'!" `shouldBe` "'\\t'"
   describe "variables" $
     it "should parse variables" $ driveParser "hey!" `shouldBe` "$hey"
   describe "function definitions" $ do
@@ -138,6 +140,7 @@ spec = do
       , ( "missing expression ending"
         , [ ("f()", "3:3")
           , ("name", "4:4")
+          , ("\"foo\"", "5:5")
           , ("4", "1:1")
           , ("4 + 5", "5:5")
           , ("(2 + 3)", "7:7")
@@ -196,6 +199,15 @@ spec = do
       , ( "functions declarations with invalid return type names"
         , [("fun foo () : {return 1!}", "13:14")]
         , "Error: expected \"<Type>\", got \"{\" at ")
+      , ( "invalid string termination"
+        , [("\"", "0:1"), ("\"abc", "0:4")]
+        , "Error: unterminated string literal at ")
+      , ( "invalid char termination"
+        , [("'", "0:1"), ("'a", "0:2")]
+        , "Error: unterminated char literal at ")
+      , ( "invalid char content"
+        , [("''", "0:2"), ("'abc'", "0:5")]
+        , "Error: character literal must contain exactly one codepoint at ")
       ] $ \(errorKind, cases, err) ->
       forM_ cases $ \(errCase, errSpan) ->
         it ("should reject " ++ errorKind ++ ": " ++ errCase) $
