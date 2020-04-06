@@ -9,4 +9,8 @@ data Token =
     , content :: String
     , sourceSpan :: Span -- start and end of the token in the source code
     }
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show Token where
+  show (Token symbol content span) =
+    show symbol ++ "(" ++ content ++ ")@" ++ show span
