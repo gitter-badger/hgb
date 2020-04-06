@@ -30,6 +30,7 @@ data Symbol
   | Div
   | Mod
   | StrBound
+  | CharBound
   | LineDelim
   | In
   | And
@@ -45,6 +46,7 @@ data Symbol
   | Type
   | Invalid
   | String
+  | Char
   | Number
   | Name
   | EndOfFile

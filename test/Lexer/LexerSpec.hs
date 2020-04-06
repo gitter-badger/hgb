@@ -28,16 +28,16 @@ spec = do
     describe "escape characters" $ do
       it "should work for string delims" $
         driveLexer "\"\\\"\"" `shouldBe`
-        ["StrBound(\")@0:1", "String(\")@1:2", "StrBound(\")@2:3"]
+        ["StrBound(\")@0:1", "String(\")@1:3", "StrBound(\")@3:4"]
       it "should work for newlines" $
         driveLexer "\"\\n\"" `shouldBe`
-        ["StrBound(\")@0:1", "String(\n)@1:2", "StrBound(\")@2:3"]
+        ["StrBound(\")@0:1", "String(\n)@1:3", "StrBound(\")@3:4"]
       it "should work for tabs" $
         driveLexer "\"\\t\"" `shouldBe`
-        ["StrBound(\")@0:1", "String(\t)@1:2", "StrBound(\")@2:3"]
+        ["StrBound(\")@0:1", "String(\t)@1:3", "StrBound(\")@3:4"]
       it "should not escape regular characters" $
         driveLexer "\"\\t\"" `shouldBe`
-        ["StrBound(\")@0:1", "String(\t)@1:2", "StrBound(\")@2:3"]
+        ["StrBound(\")@0:1", "String(\t)@1:3", "StrBound(\")@3:4"]
       it "should not escape an empty escape sequence" $
         driveLexer "\"\\" `shouldBe` ["StrBound(\")@0:1", "String(\\)@1:2"]
     it "handles missing content" $
@@ -45,6 +45,8 @@ spec = do
       ["StrBound(\")@0:1", "String()@1:1", "StrBound(\")@1:2"]
     it "handles missing ending quote" $
       driveLexer "\"str" `shouldBe` ["StrBound(\")@0:1", "String(str)@1:4"]
+    it "handles missing content and ending quote" $
+      driveLexer "\"" `shouldBe` ["StrBound(\")@0:1", "String()@1:1"]
     it "lexes after string end" $
       driveLexer "\"str\" \"ing\"" `shouldBe`
       [ "StrBound(\")@0:1"
@@ -53,6 +55,44 @@ spec = do
       , "StrBound(\")@6:7"
       , "String(ing)@7:10"
       , "StrBound(\")@10:11"
+      ]
+  describe "LexChar" $ do
+    it "lexes chars correctly" $
+      driveLexer "'a'" `shouldBe`
+      ["CharBound(')@0:1", "Char(a)@1:2", "CharBound(')@2:3"]
+    describe "escape characters" $ do
+      it "should work for char delims" $
+        driveLexer "'\\''" `shouldBe`
+        ["CharBound(')@0:1", "Char(')@1:3", "CharBound(')@3:4"]
+      it "should work for newlines" $
+        driveLexer "'\\n'" `shouldBe`
+        ["CharBound(')@0:1", "Char(\n)@1:3", "CharBound(')@3:4"]
+      it "should work for tabs" $
+        driveLexer "'\\t'" `shouldBe`
+        ["CharBound(')@0:1", "Char(\t)@1:3", "CharBound(')@3:4"]
+      it "should not escape regular characters" $
+        driveLexer "'\\t'" `shouldBe`
+        ["CharBound(')@0:1", "Char(\t)@1:3", "CharBound(')@3:4"]
+      it "should not escape an empty escape sequence" $
+        driveLexer "'\\" `shouldBe` ["CharBound(')@0:1", "Char(\\)@1:2"]
+    it "invalidates chars with more than one character" $
+      driveLexer "'ab'" `shouldBe`
+      ["CharBound(')@0:1", "Invalid(ab)@1:3", "CharBound(')@3:4"]
+    it "handles missing content" $
+      driveLexer "''" `shouldBe`
+      ["CharBound(')@0:1", "Invalid()@1:1", "CharBound(')@1:2"]
+    it "handles missing ending quote" $
+      driveLexer "'a" `shouldBe` ["CharBound(')@0:1", "Char(a)@1:2"]
+    it "handles missing content and ending quote" $
+      driveLexer "'" `shouldBe` ["CharBound(')@0:1", "Invalid()@1:1"]
+    it "lexes after char end" $
+      driveLexer "'a' 'b'" `shouldBe`
+      [ "CharBound(')@0:1"
+      , "Char(a)@1:2"
+      , "CharBound(')@2:3"
+      , "CharBound(')@4:5"
+      , "Char(b)@5:6"
+      , "CharBound(')@6:7"
       ]
   describe "LexNumber" $ do
     describe "lexes whole numbers" $ do

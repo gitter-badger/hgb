@@ -23,10 +23,11 @@ lex' :: Int -> String -> [Token]
 lex' i "" = [endOfFileToken i]
 lex' i all@(x:xs)
   | isSpace x = lex' (i + 1) xs
-  | [x] == "\"" =
-    let (tokens, afterTokens) = lexStr i all
-        endIndex = end $ sourceSpan (last tokens)
-     in tokens ++ lex' endIndex afterTokens
+  | x `elem` ['\"', '\''] =
+    let (tokens, afterTokens)
+          | x == '\"' = lexStr i all
+          | x == '\'' = lexChar i all
+     in tokens ++ lex' (end $ sourceSpan (last tokens)) afterTokens
   | otherwise =
     let (token, afterToken)
           | isDigit x = lexNumber i all
@@ -37,33 +38,56 @@ lex' i all@(x:xs)
 lexStr :: Int -> String -> ([Token], String)
 lexStr strStart (delim:afterStrOpen) =
   case afterContent of
-    [] -> ([strOpenToken, contentToken], afterContent)
+    [] -> ([strOpenToken, contentToken], [])
     (_:afterCloser) ->
       ([strOpenToken, contentToken, strCloseToken], afterCloser)
   where
     contentStart = strStart + 1
-    (contentEnd, content, afterContent) = lexStr' contentStart afterStrOpen
+    (contentEnd, content, afterContent) =
+      lexStrToDelim contentStart afterStrOpen delim
     contentToken = Token Symbol.String content (Span contentStart contentEnd)
     strOpenToken = Token Symbol.StrBound [delim] (Span strStart contentStart)
     strCloseToken =
       Token Symbol.StrBound [delim] (Span contentEnd (contentEnd + 1))
-    lexStr' :: Int -> String -> (Int, String, String)
-    lexStr' i [] = (i, [], [])
-    lexStr' i xs@(ch:xs')
-      | ch == delim = (i, [], xs)
-      | ch == backslash =
-        let (escChar, rest) = lexEscapeSequence xs'
-            (end, moreContent, afterContent) = lexStr' (i + 1) rest
-         in (end, escChar : moreContent, afterContent)
-      | otherwise =
-        let (end, moreContent, afterContent) = lexStr' (i + 1) xs'
-         in (end, ch : moreContent, afterContent)
 
-lexEscapeSequence :: String -> (Char, String)
+lexChar :: Int -> String -> ([Token], String)
+lexChar chStart (delim:afterChOpen) =
+  case afterContent of
+    [] -> ([chOpenToken, contentToken], [])
+    (_:afterCloser) -> ([chOpenToken, contentToken, chCloseToken], afterCloser)
+  where
+    contentStart = chStart + 1
+    (contentEnd, content, afterContent) =
+      lexStrToDelim contentStart afterChOpen delim
+    chOpenToken = Token Symbol.CharBound [delim] (Span chStart contentStart)
+    chCloseToken =
+      Token Symbol.CharBound [delim] (Span contentEnd (contentEnd + 1))
+    span = Span contentStart contentEnd
+    sym =
+      if length content == 1
+        then Symbol.Char
+        else Symbol.Invalid
+    contentToken = Token sym content span
+
+lexStrToDelim :: Int -> String -> Char -> (Int, String, String)
+lexStrToDelim i [] _ = (i, [], [])
+lexStrToDelim i xs@(ch:xs') delim
+  | ch == delim = (i, [], xs)
+  | ch == backslash =
+    let (escChar, len, rest) = lexEscapeSequence xs'
+        (end, moreContent, afterContent) = lexStrToDelim (i + len) rest delim
+     in (end, escChar : moreContent, afterContent)
+  | otherwise =
+    let (end, moreContent, afterContent) = lexStrToDelim (i + 1) xs' delim
+     in (end, ch : moreContent, afterContent)
+
+-- Lexes an escape sequence, returning the escaped character, the length of the
+-- escape sequence, and the remaining code.
+lexEscapeSequence :: String -> (Char, Int, String)
 -- There is nothing in the escape sequence, so just return the escape character.
 -- TODO: this should actually be a lexing error.
-lexEscapeSequence [] = (backslash, "")
-lexEscapeSequence (c:rest) = (content, rest)
+lexEscapeSequence [] = (backslash, 1, "")
+lexEscapeSequence (c:rest) = (content, 2, rest)
   where
     content =
       case c of
