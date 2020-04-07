@@ -12,30 +12,24 @@ import Error
 
 spec :: Spec
 spec = do
-  describe "Expectation" $
+  describe "Expectations" $
     forM_
       [ ("expression", Expression, "an expression")
       , ("operator", Operator, "an operator")
-      , ("one option", Options $ map Symbol [Symbol.ValueDelim], "\",\"")
-      , ( "two options"
-        , Options $ map Symbol [Symbol.ValueDelim, Symbol.RParen]
-        , "\",\" or \")\"")
-      , ( "multiple options"
-        , Options $
-          map Symbol [Symbol.ValueDelim, Symbol.RParen, Symbol.LineDelim]
-        , "\",\", \")\", or \"!\"")
-      ] $ \(name, err, str) ->
-      it ("should show expectations: " ++ name) $ show err `shouldBe` str
+      , ("a symbol", Symbol Symbol.ValueDelim, "\",\"")
+      ] $ \(name, expectation, str) ->
+      it ("should show expectations: " ++ name) $
+      show expectation `shouldBe` str
   describe "Error" $
     forM_
       [ ( "expected"
-        , Expected Expression (Token Symbol.LineDelim "!" (Span 0 1))
+        , Expected [Expression] (Token Symbol.LineDelim "!" (Span 0 1))
         , "expected an expression, got \"!\"")
       ] $ \(name, err, str) ->
       it ("should show error types: " ++ name) $ show err `shouldBe` str
   describe "Error" $
     it "should show errors" $ do
       let span = Span 0 1
-      let expected = Expected Expression (Token Symbol.LineDelim "!" span)
+      let expected = Expected [Expression] (Token Symbol.LineDelim "!" span)
       show (Error expected span) `shouldBe`
         "Error: expected an expression, got \"!\" at 0:1"

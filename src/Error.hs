@@ -28,7 +28,6 @@ data Expectation
   | Operator
   | Symbol Symbol
   | Assignment
-  | Options [Expectation]
 
 instance Show Expectation where
   show Expression = "an expression"
@@ -36,16 +35,16 @@ instance Show Expectation where
   show (Symbol Name) = "a name"
   show (Symbol sym) = show $ symbolToStr sym
   show Assignment = "an assignment"
-  show (Options expectations) = displayOptions expectations
 
 data ErrorType
-  = Expected Expectation Token
+  = Expected [Expectation] Token
   | UnterminatedLiteral Symbol
   | CharLiteralMustContainOneCodepoint
 
 instance Show ErrorType where
-  show (Expected expectation token) =
-    "expected " ++ show expectation ++ ", got " ++ show (content token)
+  show (Expected expectations token) =
+    "expected " ++
+    displayOptions expectations ++ ", got " ++ show (content token)
   show (UnterminatedLiteral kind) = do
     let kindStr =
           case kind of

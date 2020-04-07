@@ -25,9 +25,9 @@ infixOperatorPrecidence op =
 closingDelim :: Symbol -> Symbol
 closingDelim Symbol.LParen = Symbol.RParen
 
-wrapExpectation :: Expectation -> Token -> Either Error any
-wrapExpectation expectation gotTok =
-  Left $ Error (Expected expectation gotTok) (sourceSpan gotTok)
+wrapExpectation :: [Expectation] -> Token -> Either Error any
+wrapExpectation expectations gotTok =
+  Left $ Error (Expected expectations gotTok) (sourceSpan gotTok)
 
 wrapError :: ErrorType -> (Token, Token) -> Either Error any
 wrapError errorTy (startTok, endTok) =
@@ -94,7 +94,7 @@ parseFunctionDeclaration tokens = do
   let name = content nameTok
   let functionType = read $ content typeToken
   if null exprs
-    then wrapExpectation Expression $ head exprsAndBeyond
+    then wrapExpectation [Expression] $ head exprsAndBeyond
     else return
            ( Grammar.FunctionDeclaration name params functionType exprs
            , beyondFunctionDeclaration)
@@ -108,7 +108,7 @@ parseFunctionDeclaration tokens = do
       case returnConflict symbols tokens of
         Nothing -> Right tokens
         Just (expectedSymbol, actualToken) ->
-          wrapExpectation (Symbol expectedSymbol) actualToken
+          wrapExpectation [Symbol expectedSymbol] actualToken
     returnConflict :: [Symbol] -> [Token] -> Maybe (Symbol, Token)
     -- Check whether a list of matches a list of symbols at its start.
     -- If not, return a tuple of tokens that don't match the symbol.
@@ -127,7 +127,7 @@ parsePrefix delims tokens@(tok:_)
   | sym == Symbol.StrBound = parseString tokens
   | sym == Symbol.CharBound = parseChar tokens
   | sym == Symbol.Return = parseReturn tokens
-  | otherwise = wrapExpectation Expression tok
+  | otherwise = wrapExpectation [Expression] tok
   where
     prefixOperators = [Symbol.Plus, Symbol.Minus]
     sym = symbol tok
@@ -193,8 +193,7 @@ parseInfix precedence delims = parseInfix'
             (right, afterExpr) <- parseExpr newPrecidence delims afterOperator
             let expr = Grammar.Call operatorStr [left, right]
             parseInfix' expr afterExpr
-      | otherwise =
-        wrapExpectation (Options $ Operator : map Symbol delims) operatorTok
+      | otherwise = wrapExpectation (Operator : map Symbol delims) operatorTok
       where
         infixOperators =
           [Symbol.Plus, Symbol.Minus, Symbol.Times, Symbol.Div, Symbol.Mod]
@@ -235,13 +234,13 @@ parseDeclare delims (nameTok:typeDelim:Token Symbol.Type typeStr _:next:beyond)
       (Grammar.Declaration name varType (Just declaration), afterDeclaration)
   | nextSym `elem` delims =
     Right (Grammar.Declaration name varType Nothing, next : beyond)
-  | otherwise = wrapExpectation (Options $ Assignment : map Symbol delims) next
+  | otherwise = wrapExpectation (Assignment : map Symbol delims) next
   where
     nextSym = symbol next
     varType = read typeStr
     name = content nameTok
 parseDeclare _ (nameTok:typeDelim:wrongToken:after) =
-  wrapExpectation (Symbol Symbol.Type) wrongToken
+  wrapExpectation [Symbol Symbol.Type] wrongToken
 
 parseAssign :: [Delim] -> ExpressionParser
 parseAssign delims (nameTok:assign:afterAssign) = do
