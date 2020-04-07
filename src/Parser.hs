@@ -6,9 +6,9 @@ module Parser
 
 import Data.Maybe
 import Error (Error(..), ErrorType(..), Expectation(..))
-import Grammar (Expression, Type)
+import Grammar (Expression, Type(..))
 import qualified Grammar
-import Symbol (Symbol(..))
+import Symbol (Symbol)
 import qualified Symbol
 import Token (Token(..))
 import Utils
@@ -83,16 +83,17 @@ parseFunctionDeclaration tokens = do
   tokens <- expectedStart `assertMatches` tokens
   let nameTok:lParen:paramsAndBeyond = tokens
   (params, afterParams) <- parseDeclarations paramsAndBeyond
-  tokens <- expectedMid `assertMatches` afterParams
-  let typeDelim:typeToken:lBrace:exprsAndBeyond = afterParams
-  (exprs, beyondFunctionDeclaration) <- parseLines Symbol.RBrace exprsAndBeyond
+  tokens <- [Symbol.TypeDelim] `assertMatches` afterParams
+  (functionType, afterType) <- parseType afterParams
+  tokens <- [Symbol.LBrace] `assertMatches` afterType
+  let lBrace:exprsAndBeyond = afterType
+  (exprs, afterFunctionDeclaration) <- parseLines Symbol.RBrace exprsAndBeyond
   let name = content nameTok
-  let functionType = read $ content typeToken
   if null exprs
     then wrapExpectation Expression $ head exprsAndBeyond
     else return
            ( Grammar.FunctionDeclaration name params functionType exprs
-           , beyondFunctionDeclaration)
+           , afterFunctionDeclaration)
   where
     expectedStart = [Symbol.Name, Symbol.LParen]
     expectedMid = [Symbol.TypeDelim, Symbol.Type, Symbol.LBrace]
@@ -222,20 +223,18 @@ parseCall (nameTok:lParen:afterLParen) = do
     parseEnumeration' = parseEnumeration parseFunction Symbol.ValueDelim
 
 parseDeclare :: [Delim] -> ExpressionParser
-parseDeclare delims (nameTok:typeDelim:Token Symbol.Type typeStr _:next:beyond)
-  | nextSym == Symbol.Assign = do
-    (declaration, afterDeclaration) <- parseExpr 0 delims beyond
-    return
-      (Grammar.Declaration name varType (Just declaration), afterDeclaration)
-  | nextSym `elem` delims =
-    Right (Grammar.Declaration name varType Nothing, next : beyond)
-  | otherwise = wrapExpectation (Options $ Assignment : map Symbol delims) next
+parseDeclare delims (nameTok:typeDelim:afterTypeDelim) = do
+  (varType, afterType) <- parseType afterTypeDelim
+  let (next:beyond) = afterType
+  if
+    | symbol next == Symbol.Assign -> do
+      (declaration, afterDeclaration) <- parseExpr 0 delims beyond
+      return
+        (Grammar.Declaration name varType (Just declaration), afterDeclaration)
+    | symbol next `elem` delims -> return (Grammar.Declaration name varType Nothing, afterType)
+    | otherwise -> wrapExpectation (Options $ Assignment : map Symbol delims) next
   where
-    nextSym = symbol next
-    varType = read typeStr
     name = content nameTok
-parseDeclare _ (nameTok:typeDelim:wrongToken:after) =
-  wrapExpectation (Symbol Symbol.Type) wrongToken
 
 parseAssign :: [Delim] -> ExpressionParser
 parseAssign delims (nameTok:assign:afterAssign) = do
@@ -302,3 +301,14 @@ parseReturn :: ExpressionParser
 parseReturn (returnTok:afterKeyword) = do
   (expr, afterExpr) <- parseExpr 0 [Symbol.LineDelim] afterKeyword
   return (Grammar.Return expr, afterExpr)
+
+parseType :: [Token] -> Either Error (Grammar.Type, [Token])
+parseType (tok:afterTok) =
+  case symbol tok of
+    Symbol.Type -> Right (read $ content tok, afterTok)
+    Symbol.LBracket -> do
+      (arrayType, afterType) <- parseType afterTok
+      if (symbol $ head afterType) == Symbol.RBracket
+        then return (Array arrayType, tail afterType)
+        else wrapExpectation (Symbol Symbol.LBracket) (head afterType)
+    _ -> wrapExpectation (Options $ map Symbol [Symbol.Type, Symbol.LBracket]) tok

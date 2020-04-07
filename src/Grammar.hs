@@ -34,6 +34,7 @@ data Type
       }
   | Double
   | Void
+  | Array Type
   deriving (Eq)
 
 instance Show Type where
