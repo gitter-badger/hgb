@@ -28,6 +28,7 @@ data Expectation
   | Operator
   | Symbol Symbol
   | Assignment
+  | TypeDeclaration
   | Options [Expectation]
 
 instance Show Expectation where
@@ -36,6 +37,7 @@ instance Show Expectation where
   show (Symbol Name) = "a name"
   show (Symbol sym) = show $ symbolToStr sym
   show Assignment = "an assignment"
+  show TypeDeclaration = "a type declaration"
   show (Options expectations) = displayOptions expectations
 
 data ErrorType =

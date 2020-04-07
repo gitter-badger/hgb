@@ -84,7 +84,7 @@ parseFunctionDeclaration tokens = do
   let nameTok:lParen:paramsAndBeyond = tokens
   (params, afterParams) <- parseDeclarations paramsAndBeyond
   tokens <- [Symbol.TypeDelim] `assertMatches` afterParams
-  (functionType, afterType) <- parseType afterParams
+  (functionType, afterType) <- parseType $ tail afterParams
   tokens <- [Symbol.LBrace] `assertMatches` afterType
   let lBrace:exprsAndBeyond = afterType
   (exprs, afterFunctionDeclaration) <- parseLines Symbol.RBrace exprsAndBeyond
@@ -226,13 +226,15 @@ parseDeclare :: [Delim] -> ExpressionParser
 parseDeclare delims (nameTok:typeDelim:afterTypeDelim) = do
   (varType, afterType) <- parseType afterTypeDelim
   let (next:beyond) = afterType
-  if
-    | symbol next == Symbol.Assign -> do
-      (declaration, afterDeclaration) <- parseExpr 0 delims beyond
-      return
-        (Grammar.Declaration name varType (Just declaration), afterDeclaration)
-    | symbol next `elem` delims -> return (Grammar.Declaration name varType Nothing, afterType)
-    | otherwise -> wrapExpectation (Options $ Assignment : map Symbol delims) next
+  if | symbol next == Symbol.Assign ->
+       do (declaration, afterDeclaration) <- parseExpr 0 delims beyond
+          return
+            ( Grammar.Declaration name varType (Just declaration)
+            , afterDeclaration)
+     | symbol next `elem` delims ->
+       return (Grammar.Declaration name varType Nothing, afterType)
+     | otherwise ->
+       wrapExpectation (Options $ Assignment : map Symbol delims) next
   where
     name = content nameTok
 
@@ -308,7 +310,7 @@ parseType (tok:afterTok) =
     Symbol.Type -> Right (read $ content tok, afterTok)
     Symbol.LBracket -> do
       (arrayType, afterType) <- parseType afterTok
-      if (symbol $ head afterType) == Symbol.RBracket
+      if symbol (head afterType) == Symbol.RBracket
         then return (Array arrayType, tail afterType)
-        else wrapExpectation (Symbol Symbol.LBracket) (head afterType)
-    _ -> wrapExpectation (Options $ map Symbol [Symbol.Type, Symbol.LBracket]) tok
+        else wrapExpectation (Symbol Symbol.RBracket) (head afterType)
+    _ -> wrapExpectation TypeDeclaration tok

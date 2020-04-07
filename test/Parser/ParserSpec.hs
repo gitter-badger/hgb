@@ -40,6 +40,7 @@ spec = do
         , "foo:uint64 = 10 + 20 * 30!"
         , "(declare ($foo : uint64) (+ 10 (* 20 30)))")
       , ("with arbitrary whitespace", "a  : \t void!", "(declare ($a : void))")
+      , ("with an array type", "a : [int]!", "(declare ($a : [int]))")
       ] $ \(name, input, output) ->
       it ("should parse variable declations " ++ name) $
       driveParser input `shouldBe` output
@@ -177,10 +178,16 @@ spec = do
         , "Error: expected an assignment or \"!\", got \"+\" at ")
       , ( "declarations with no type name"
         , [("a : !", "4:5")]
-        , "Error: expected \"<Type>\", got \"!\" at ")
+        , "Error: expected a type declaration, got \"!\" at ")
       , ( "declarations with invalid type names"
         , [("a : 1!", "4:5")]
-        , "Error: expected \"<Type>\", got \"1\" at ")
+        , "Error: expected a type declaration, got \"1\" at ")
+      , ( "declarations with invalid arrays"
+        , [("a : [1 + 1]", "5:6")]
+        , "Error: expected a type declaration, got \"1\" at ")
+      , ( "declarations with arrays that aren't closed"
+        , [("a : [double!", "11:12")]
+        , "Error: expected \"]\", got \"!\" at ")
       , ( "functions declarations with no expressions"
         , [("fun foo () : void {}", "19:20")]
         , "Error: expected an expression, got \"}\" at ")
@@ -192,10 +199,10 @@ spec = do
         , "Error: expected \":\", got \"{\" at ")
       , ( "functions declarations with no return type name"
         , [("fun foo () : {return 1!}", "13:14")]
-        , "Error: expected \"<Type>\", got \"{\" at ")
+        , "Error: expected a type declaration, got \"{\" at ")
       , ( "functions declarations with invalid return type names"
         , [("fun foo () : {return 1!}", "13:14")]
-        , "Error: expected \"<Type>\", got \"{\" at ")
+        , "Error: expected a type declaration, got \"{\" at ")
       ] $ \(errorKind, cases, err) ->
       forM_ cases $ \(errCase, errSpan) ->
         it ("should reject " ++ errorKind ++ ": " ++ errCase) $

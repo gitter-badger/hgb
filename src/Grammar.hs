@@ -44,6 +44,7 @@ instance Show Type where
   show (Int Nothing False) = "uint"
   show (Int (Just n) True) = "int" ++ show n
   show (Int Nothing True) = "int"
+  show (Array ty) = "[" ++ show ty ++ "]"
 
 instance Read Type where
   readsPrec _ ty = [(readType ty, "")]

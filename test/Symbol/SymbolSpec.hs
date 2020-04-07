@@ -48,3 +48,4 @@ spec =
     , (Symbol.Return, "Return")
     , (Symbol.Type, "Type")
     ] $ \(sym, str) -> it ("should show " ++ str) $ show sym `shouldBe` str
+  

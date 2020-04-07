@@ -59,4 +59,5 @@ symbolToStr LineDelim = "!"
 symbolToStr RParen = ")"
 symbolToStr ValueDelim = ","
 symbolToStr TypeDelim = ":"
+symbolToStr RBracket = "]"
 symbolToStr s = "<" ++ show s ++ ">" -- e.g. <Type>
